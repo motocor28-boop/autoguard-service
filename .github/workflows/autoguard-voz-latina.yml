@@ -21,31 +21,58 @@ jobs:
       - name: Instalar generador de voz
         run: pip install --disable-pip-version-check edge-tts
 
-      - name: Generar narración en español latino chileno
+      - name: Generar narración masculina en español latino chileno
         shell: bash
         run: |
-          cat > guion.txt <<'EOF'
-          ¿Escuchas ruidos al frenar, sientes vibraciones o notas que el pedal responde distinto? No lo dejes pasar. En Auto Guard Service revisamos pastillas, discos, cálipers y líquido de frenos, y realizamos el cambio de pastillas directamente en tu domicilio. Trabajamos con seguridad, orden y transparencia, para que conozcas el estado real de tu vehículo. Atendemos en Antofagasta y alrededores. Agenda por WhatsApp al más cincuenta y seis, nueve, siete siete cuatro ocho, dos ocho dos uno. Auto Guard Service. Seguridad en cada frenada.
-          EOF
-          python -m edge_tts \
-            --voice es-CL-LorenzoNeural \
-            --rate=-4% \
-            --pitch=-2Hz \
-            --volume=+4% \
-            --text "$(cat guion.txt)" \
-            --write-media autoguard_voz_espanol_latino.mp3 \
-            --write-subtitles autoguard_voz_espanol_latino.vtt
+          cat > generar_voz.py <<'PY'
+          import asyncio
+          import edge_tts
+
+          TEXTO = """¿Escuchas ruidos al frenar, sientes vibraciones o notas que el pedal responde distinto? No lo dejes pasar. En Auto Guard Service revisamos pastillas, discos, cálipers y líquido de frenos, y realizamos el cambio de pastillas directamente en tu domicilio. Trabajamos con seguridad, orden y transparencia, para que conozcas el estado real de tu vehículo. Atendemos en Antofagasta y alrededores. Agenda por WhatsApp al más cincuenta y seis, nueve, siete siete cuatro ocho, dos ocho dos uno. Auto Guard Service. Seguridad en cada frenada."""
+
+          async def main():
+              voces = await edge_tts.list_voices()
+              preferidas = [
+                  "es-CL-LorenzoNeural",
+                  "es-MX-JorgeNeural",
+                  "es-US-AlonsoNeural",
+                  "es-CO-GonzaloNeural",
+              ]
+              disponibles = {v["ShortName"] for v in voces}
+              voz = next((v for v in preferidas if v in disponibles), None)
+              if voz is None:
+                  voz = next(v["ShortName"] for v in voces if v["Locale"].startswith("es-") and v["Gender"] == "Male")
+              print(f"VOZ_SELECCIONADA={voz}")
+              comunicador = edge_tts.Communicate(
+                  TEXTO,
+                  voz,
+                  rate="-4%",
+                  pitch="-2Hz",
+                  volume="+4%",
+              )
+              await comunicador.save("autoguard_voz_espanol_latino.mp3")
+              with open("voz_seleccionada.txt", "w", encoding="utf-8") as f:
+                  f.write(voz + "\n")
+              with open("guion.txt", "w", encoding="utf-8") as f:
+                  f.write(TEXTO + "\n")
+
+          asyncio.run(main())
+          PY
+          python generar_voz.py
           ffmpeg -y -i autoguard_voz_espanol_latino.mp3 \
             -af "loudnorm=I=-16:TP=-1.5:LRA=11" \
             -ar 48000 -ac 2 autoguard_voz_espanol_latino.wav
 
       - name: Publicar audio
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: autoguard-voz-espanol-latino
           path: |
             autoguard_voz_espanol_latino.mp3
             autoguard_voz_espanol_latino.wav
-            autoguard_voz_espanol_latino.vtt
+            voz_seleccionada.txt
             guion.txt
+            generar_voz.py
+          if-no-files-found: warn
           retention-days: 7
