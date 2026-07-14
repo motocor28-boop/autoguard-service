@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://motocor28-boop.github.io/autoguard-service/sitemap.xml
