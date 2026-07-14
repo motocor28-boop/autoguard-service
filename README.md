@@ -4,9 +4,8 @@ Sitio oficial de **AutoGuard Servicios**, mecánica móvil profesional en Antofa
 
 ## Propuesta de servicio
 
-- Diagnóstico y evaluación con escáner básico OBD2.
 - Frenos delanteros y frenos completos.
-- Diagnóstico e instalación de batería.
+- Revisión e instalación de batería.
 - Asistencia rápida y servicio nocturno.
 - Revisión de tren delantero, suspensión y dirección.
 - Chequeos preventivos y revisión precompra.
@@ -21,3 +20,5 @@ Sitio oficial de **AutoGuard Servicios**, mecánica móvil profesional en Antofa
 ## Información comercial
 
 Los precios publicados son valores desde y corresponden principalmente a mano de obra. Los repuestos no están incluidos; al incorporarlos, el valor cambia según marca, modelo y disponibilidad.
+
+Generación de narración profesional en español latino para el video de frenos.
