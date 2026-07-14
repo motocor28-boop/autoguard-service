@@ -1,15 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 270" role="img" aria-labelledby="title desc">
   <title id="title">AutoGuard Servicios</title>
-  <desc id="desc">Escudo naranja con silueta de vehículo</desc>
+  <desc id="desc">Escudo metálico con letra A, símbolo de aprobación y engranaje</desc>
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#ff9a3d"/>
-      <stop offset="1" stop-color="#f45d00"/>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".2" stop-color="#777d83"/><stop offset=".42" stop-color="#f6f7f8"/><stop offset=".7" stop-color="#5e646b"/><stop offset="1" stop-color="#d9dde0"/>
     </linearGradient>
+    <linearGradient id="steelDark" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#f2f3f4"/><stop offset=".48" stop-color="#8b9197"/><stop offset="1" stop-color="#4f555b"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ff9a2f"/><stop offset=".55" stop-color="#ff6a00"/><stop offset="1" stop-color="#d94700"/>
+    </linearGradient>
+    <radialGradient id="inner" cx="50%" cy="35%" r="75%"><stop stop-color="#191d21"/><stop offset="1" stop-color="#050709"/></radialGradient>
+    <filter id="shadow" x="-30%" y="-20%" width="160%" height="170%"><feDropShadow dx="0" dy="13" stdDeviation="10" flood-color="#000" flood-opacity=".7"/></filter>
   </defs>
-  <path d="M60 5 105 21v36c0 30-17 50-45 59C32 107 15 87 15 57V21Z" fill="url(#g)"/>
-  <path d="M60 18 92 30v27c0 22-11 37-32 45-21-8-32-23-32-45V30Z" fill="#11161b"/>
-  <path d="m39 63 7-17h28l8 17M35 64h50M43 64v10m34-10v10" fill="none" stroke="#ff8624" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="46" cy="74" r="4" fill="#ff8624"/>
-  <circle cx="75" cy="74" r="4" fill="#ff8624"/>
+  <g filter="url(#shadow)">
+    <path d="M120 7 224 43v80c0 70-39 117-104 139C55 240 16 193 16 123V43Z" fill="url(#steel)"/>
+    <path d="M120 18 212 50v72c0 61-34 104-92 126-58-22-92-65-92-126V50Z" fill="#090b0d"/>
+    <path d="M120 29 202 58v65c0 53-29 92-82 113-53-21-82-60-82-113V58Z" fill="url(#inner)" stroke="url(#orange)" stroke-width="5"/>
+    <path d="M72 165 109 62h27l43 103h-31l-9-23h-38l-8 23Zm38-49h20l-10-31Z" fill="url(#steelDark)" stroke="#e9ecef" stroke-width="2"/>
+    <path d="m87 129 22 23 58-68" fill="none" stroke="#0a0c0e" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="m87 125 22 23 58-68" fill="none" stroke="url(#steel)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <g transform="translate(120 188)">
+      <path d="M-9-33h18l3 10 10 4 9-5 12 13-6 9 4 10 10 3v18l-10 3-4 10 6 9-12 13-9-5-10 4-3 10H-9l-3-10-10-4-9 5-12-13 6-9-4-10-10-3V11l10-3 4-10-6-9 12-13 9 5 10-4Z" fill="url(#steelDark)" stroke="#eceff1" stroke-width="2"/>
+      <circle r="18" fill="#0a0c0e" stroke="url(#orange)" stroke-width="5"/>
+    </g>
+  </g>
 </svg>
