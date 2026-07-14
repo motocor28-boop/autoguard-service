@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+  <title id="title">AutoGuard Servicios</title>
+  <desc id="desc">Escudo naranja con silueta de vehículo</desc>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ff9a3d"/>
+      <stop offset="1" stop-color="#f45d00"/>
+    </linearGradient>
+  </defs>
+  <path d="M60 5 105 21v36c0 30-17 50-45 59C32 107 15 87 15 57V21Z" fill="url(#g)"/>
+  <path d="M60 18 92 30v27c0 22-11 37-32 45-21-8-32-23-32-45V30Z" fill="#11161b"/>
+  <path d="m39 63 7-17h28l8 17M35 64h50M43 64v10m34-10v10" fill="none" stroke="#ff8624" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="46" cy="74" r="4" fill="#ff8624"/>
+  <circle cx="75" cy="74" r="4" fill="#ff8624"/>
+</svg>
