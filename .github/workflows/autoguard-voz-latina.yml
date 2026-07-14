@@ -1,78 +1,27 @@
-name: AutoGuard Voz Latina
+name: AutoGuard Video Final Latino
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
 
 jobs:
-  generar-voz:
+  entregar-video:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Instalar generador de voz
-        run: pip install --disable-pip-version-check edge-tts
-
-      - name: Generar narración masculina en español latino chileno
+      - name: Descargar video final con voz chilena
         shell: bash
         run: |
-          cat > generar_voz.py <<'PY'
-          import asyncio
-          import edge_tts
+          curl -L --fail --retry 3 --output autoguard_video_espanol_latino.mp4 'https://walnut-prod-va6.walnut-cdn.adobe.io/walnut-compute-results/v2/9879825218ae2748f4f0b8060085ad1897e2f27460c0ede829d17440adaaa7f3/result?x-auth=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQwMDUyMDAsIm5iZiI6MTc4Mzk5NDQwMCwia2V5VmVyc2lvbiI6MTc4MzAxMjIyMzEzNCwicGF0aCI6Ii93YWxudXQtY29tcHV0ZS1yZXN1bHRzL3YyLzk4Nzk4MjUyMThhZTI3NDhmNGYwYjgwNjAwODVhZDE4OTdlMmYyNzQ2MGMwZWRlODI5ZDE3NDQwYWRhYWE3ZjMvcmVzdWx0In0.TSJSN2xp3txt2R_N_e3-HaaxxGlRr_TYb7a9mgImO38'
+          ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_type,codec_name -of default=noprint_wrappers=1 autoguard_video_espanol_latino.mp4 > verificacion_video.txt
 
-          TEXTO = """¿Escuchas ruidos al frenar, sientes vibraciones o notas que el pedal responde distinto? No lo dejes pasar. En Auto Guard Service revisamos pastillas, discos, cálipers y líquido de frenos, y realizamos el cambio de pastillas directamente en tu domicilio. Trabajamos con seguridad, orden y transparencia, para que conozcas el estado real de tu vehículo. Atendemos en Antofagasta y alrededores. Agenda por WhatsApp al más cincuenta y seis, nueve, siete siete cuatro ocho, dos ocho dos uno. Auto Guard Service. Seguridad en cada frenada."""
-
-          async def main():
-              voces = await edge_tts.list_voices()
-              preferidas = [
-                  "es-CL-LorenzoNeural",
-                  "es-MX-JorgeNeural",
-                  "es-US-AlonsoNeural",
-                  "es-CO-GonzaloNeural",
-              ]
-              disponibles = {v["ShortName"] for v in voces}
-              voz = next((v for v in preferidas if v in disponibles), None)
-              if voz is None:
-                  voz = next(v["ShortName"] for v in voces if v["Locale"].startswith("es-") and v["Gender"] == "Male")
-              print(f"VOZ_SELECCIONADA={voz}")
-              comunicador = edge_tts.Communicate(
-                  TEXTO,
-                  voz,
-                  rate="-4%",
-                  pitch="-2Hz",
-                  volume="+4%",
-              )
-              await comunicador.save("autoguard_voz_espanol_latino.mp3")
-              with open("voz_seleccionada.txt", "w", encoding="utf-8") as f:
-                  f.write(voz + "\n")
-              with open("guion.txt", "w", encoding="utf-8") as f:
-                  f.write(TEXTO + "\n")
-
-          asyncio.run(main())
-          PY
-          python generar_voz.py
-          ffmpeg -y -i autoguard_voz_espanol_latino.mp3 \
-            -af "loudnorm=I=-16:TP=-1.5:LRA=11" \
-            -ar 48000 -ac 2 autoguard_voz_espanol_latino.wav
-
-      - name: Publicar audio
-        if: always()
+      - name: Publicar video final
         uses: actions/upload-artifact@v4
         with:
-          name: autoguard-voz-espanol-latino
+          name: autoguard-video-final-espanol-latino
           path: |
-            autoguard_voz_espanol_latino.mp3
-            autoguard_voz_espanol_latino.wav
-            voz_seleccionada.txt
-            guion.txt
-            generar_voz.py
-          if-no-files-found: warn
-          retention-days: 7
+            autoguard_video_espanol_latino.mp4
+            verificacion_video.txt
+          retention-days: 30
