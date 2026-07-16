@@ -1,36 +1,23 @@
 const year = document.getElementById('year');
 if (year) year.textContent = new Date().getFullYear();
 
-/*
-  Para publicar un nuevo reel:
-  1. Sube el MP4 a la carpeta /reels del repositorio o usa una URL pública.
-  2. Agrega una nueva ficha al inicio de este listado.
-  3. Completa video: 'reels/nombre-del-video.mp4'.
-*/
+/* Biblioteca de videos publicados. Los archivos se sirven desde /reels. */
 const reels = [
   {
     category: 'FRENOS Y SEGURIDAD',
-    title: 'Señales de alerta en el sistema de frenos',
-    description: 'Ruidos, vibraciones, pedal diferente y señales que requieren una revisión profesional.',
-    video: '',
+    title: 'Tus frenos te están hablando',
+    description: 'Ruidos al frenar, vibraciones o cambios en el pedal son señales que requieren una revisión profesional.',
+    video: 'reels/tus-frenos-te-estan-hablando.mp4',
     poster: 'assets/autoguard-frenos-premium.png',
-    status: 'PRÓXIMAMENTE'
+    layout: 'vertical'
   },
   {
-    category: 'BATERÍA Y ARRANQUE',
-    title: 'Cómo anticipar una falla de batería',
-    description: 'Síntomas frecuentes antes de que el vehículo deje de arrancar y qué revisar a tiempo.',
-    video: '',
+    category: 'AUTOGUARD SERVICIOS',
+    title: 'Seguridad mecánica a domicilio',
+    description: 'Conoce nuestros servicios de frenos, baterías, asistencia rápida y chequeos preventivos en Antofagasta.',
+    video: 'reels/autoguard-servicios-a-domicilio.mp4',
     poster: 'assets/autoguard-menu-premium.png',
-    status: 'PRÓXIMAMENTE'
-  },
-  {
-    category: 'MANTENCIÓN PREVENTIVA',
-    title: 'Chequeos esenciales antes de viajar',
-    description: 'Frenos, neumáticos, niveles, batería y elementos de seguridad que conviene revisar.',
-    video: '',
-    poster: 'logo.svg',
-    status: 'PRÓXIMAMENTE'
+    layout: 'wide'
   }
 ];
 
@@ -57,14 +44,14 @@ function createMedia(reel) {
 
 if (grid) {
   grid.innerHTML = reels.map((reel) => `
-    <article class="reel-card">
-      <div class="reel-media">${createMedia(reel)}</div>
+    <article class="reel-card${reel.layout === 'wide' ? ' reel-card-wide' : ''}">
+      <div class="reel-media${reel.layout === 'wide' ? ' reel-media-wide' : ''}">${createMedia(reel)}</div>
       <div class="reel-body">
         <span class="reel-kicker">${reel.category}</span>
         <h3>${reel.title}</h3>
         <p>${reel.description}</p>
         <div class="reel-actions">
-          ${reel.video ? `<a href="${reel.video}" target="_blank" rel="noopener">Abrir video</a>` : '<a href="#videos" aria-disabled="true">En preparación</a>'}
+          ${reel.video ? `<a href="${reel.video}" target="_blank" rel="noopener">Abrir video</a>` : ''}
           <a href="${whatsappUrl}" target="_blank" rel="noopener">Agendar revisión</a>
         </div>
       </div>

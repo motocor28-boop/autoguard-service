@@ -47,13 +47,12 @@ if (servicesSection && priceSection && !document.getElementById('reels')) {
       <div class="reels-preview-copy">
         <p class="eyebrow"><span></span>AutoGuard TV</p>
         <h2>Consejos mecánicos en formato reel</h2>
-        <p>Una biblioteca para publicar cada nuevo video de seguridad, fallas frecuentes, frenos, baterías y mantención preventiva.</p>
+        <p>Ya puedes ver nuestros videos de seguridad, señales de alerta y servicios mecánicos a domicilio.</p>
         <a class="button primary" href="reels.html">Ver biblioteca de reels</a>
       </div>
-      <div class="reels-preview-cards" aria-label="Temas de los próximos reels">
-        <article><b>01</b><strong>Frenos</strong><span>Ruidos, vibraciones y desgaste.</span></article>
-        <article><b>02</b><strong>Batería</strong><span>Señales antes de quedar en panne.</span></article>
-        <article><b>03</b><strong>Prevención</strong><span>Chequeos antes de viajar.</span></article>
+      <div class="reels-preview-cards" aria-label="Videos publicados">
+        <article><b>01 · PUBLICADO</b><strong>Tus frenos te están hablando</strong><span>Ruidos, vibraciones y cambios en el pedal.</span></article>
+        <article><b>02 · PUBLICADO</b><strong>AutoGuard Servicios</strong><span>Seguridad mecánica a domicilio.</span></article>
       </div>
     </div>`;
   priceSection.parentNode.insertBefore(reelsSection, priceSection);
