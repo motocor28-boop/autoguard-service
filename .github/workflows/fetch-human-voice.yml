@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   fetch-voice:
@@ -15,26 +15,18 @@ jobs:
     steps:
       - name: Descargar narración latina neutra
         run: |
-          mkdir -p output assets/audio
+          mkdir -p output
           curl --fail --location --retry 4 --retry-delay 3 \
-            'https://resource2.heygen.ai/text_to_speech/30659c53516c4c6c8eb1082cd24c9615/782e79f53e85483086d0026084d670da/id=813e77d1-add3-4cbc-8f14-01570fa340b0.wav' \
+            'https://resource2.heygen.ai/text_to_speech/30659c53516c4c6c8eb1082cd24c9615/782e79f53e85483086d0026084d670da/id=a5d45454-7778-4549-8b87-88c0222da5e3.wav' \
             --output output/voz-latina-neutra-autoguard.wav
           test -s output/voz-latina-neutra-autoguard.wav
 
       - name: Publicar artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: voz-latina-neutra-autoguard-final
+          name: voz-latina-neutra-autoguard-ritmo
           path: output/voz-latina-neutra-autoguard.wav
           retention-days: 7
 
-      - name: Registrar ejecución
-        run: |
-          echo "${GITHUB_RUN_ID}" > assets/audio/latin-neutral-run-id.txt
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/audio/latin-neutral-run-id.txt
-          git diff --cached --quiet || git commit -m 'Registrar voz latina neutra final'
-          git push
-
-# Activación 2026-07-16
+      - name: Finalizar transferencia
+        run: exit 1
