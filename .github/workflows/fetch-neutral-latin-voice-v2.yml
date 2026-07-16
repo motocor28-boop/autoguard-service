@@ -1,0 +1,38 @@
+name: Preparar voz latina neutra AutoGuard v2
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fetch-neutral-latin-voice-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-voice:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar locución
+        run: |
+          mkdir -p output assets/audio
+          curl --fail --location --retry 4 --retry-delay 3 \
+            'https://resource2.heygen.ai/text_to_speech/30659c53516c4c6c8eb1082cd24c9615/782e79f53e85483086d0026084d670da/id=813e77d1-add3-4cbc-8f14-01570fa340b0.wav' \
+            --output output/voz-latina-neutra-autoguard.wav
+          test -s output/voz-latina-neutra-autoguard.wav
+
+      - name: Publicar artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: voz-latina-neutra-autoguard-v2
+          path: output/voz-latina-neutra-autoguard.wav
+          retention-days: 7
+
+      - name: Registrar ID de ejecución
+        run: |
+          echo "${GITHUB_RUN_ID}" > assets/audio/neutral-latin-run-id.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/audio/neutral-latin-run-id.txt
+          git diff --cached --quiet || git commit -m 'Registrar ejecución de voz latina neutra'
+          git push
