@@ -18,16 +18,25 @@ jobs:
 
       - name: Descargar narración natural
         run: |
-          mkdir -p assets/audio
+          mkdir -p assets/audio temp
           curl --fail --location --retry 4 --retry-delay 3 \
             'https://resource2.heygen.ai/text_to_speech/30659c53516c4c6c8eb1082cd24c9615/398936ac428244c6966feefe6d151c6a/id=04e68a4e-ec49-436d-9445-a32fd608e776.wav' \
             --output assets/audio/narracion-natural-bateria.wav
           test -s assets/audio/narracion-natural-bateria.wav
+          printf '%s' "$GITHUB_RUN_ID" > temp/human_voice_run_id.txt
 
-      - name: Guardar pista en el repositorio
+      - name: Publicar artefacto descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: narracion-natural-bateria
+          path: assets/audio/narracion-natural-bateria.wav
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Guardar pista y número de ejecución
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/audio/narracion-natural-bateria.wav
-          git diff --cached --quiet || git commit -m 'Agregar narración natural del Reel de batería'
+          git add assets/audio/narracion-natural-bateria.wav temp/human_voice_run_id.txt
+          git diff --cached --quiet || git commit -m 'Actualizar narración natural del Reel de batería'
           git push
