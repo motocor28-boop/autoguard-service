@@ -1,0 +1,33 @@
+name: Preparar voz humana AutoGuard
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fetch-human-voice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-voice:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Descargar narración natural
+        run: |
+          mkdir -p assets/audio
+          curl --fail --location --retry 4 --retry-delay 3 \
+            'https://resource2.heygen.ai/text_to_speech/30659c53516c4c6c8eb1082cd24c9615/398936ac428244c6966feefe6d151c6a/id=04e68a4e-ec49-436d-9445-a32fd608e776.wav' \
+            --output assets/audio/narracion-natural-bateria.wav
+          test -s assets/audio/narracion-natural-bateria.wav
+
+      - name: Guardar pista en el repositorio
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/audio/narracion-natural-bateria.wav
+          git diff --cached --quiet || git commit -m 'Agregar narración natural del Reel de batería'
+          git push
