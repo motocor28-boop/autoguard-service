@@ -36,3 +36,5 @@ jobs:
           git add assets/audio/neutral-latin-run-id.txt
           git diff --cached --quiet || git commit -m 'Registrar ejecución de voz latina neutra'
           git push
+
+# Activación final del flujo
