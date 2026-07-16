@@ -1,0 +1,30 @@
+name: Preparar voz latina neutra AutoGuard
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fetch-latin-neutral-voice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+tasks:
+
+jobs:
+  fetch-voice:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar narración latina neutra
+        run: |
+          mkdir -p output
+          curl --fail --location --retry 4 --retry-delay 3 \
+            'https://resource2.heygen.ai/text_to_speech/30659c53516c4c6c8eb1082cd24c9615/782e79f53e85483086d0026084d670da/id=813e77d1-add3-4cbc-8f14-01570fa340b0.wav' \
+            --output output/voz-latina-neutra-autoguard.wav
+          test -s output/voz-latina-neutra-autoguard.wav
+      - name: Publicar artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: voz-latina-neutra-autoguard
+          path: output/voz-latina-neutra-autoguard.wav
+          retention-days: 7
