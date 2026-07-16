@@ -1,4 +1,4 @@
-name: Preparar voz latina neutra AutoGuard
+name: Transferir Reel AutoGuard final
 
 on:
   push:
@@ -10,22 +10,22 @@ permissions:
   contents: read
 
 jobs:
-  fetch-voice:
+  transferir-reel:
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar narración latina neutra
+      - name: Descargar Reel renderizado
         run: |
           mkdir -p output
           curl --fail --location --retry 4 --retry-delay 3 \
-            'https://resource2.heygen.ai/text_to_speech/30659c53516c4c6c8eb1082cd24c9615/782e79f53e85483086d0026084d670da/id=a5d45454-7778-4549-8b87-88c0222da5e3.wav' \
-            --output output/voz-latina-neutra-autoguard.wav
-          test -s output/voz-latina-neutra-autoguard.wav
+            'https://walnut-prod-va6.walnut-cdn.adobe.io/walnut-compute-results/v2/0e96a7fc3768f4f67e07fa0a6dcb3329417f9bdf7a427648cf3d88a2691b2a04/result?x-auth=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQyNDI4MDAsIm5iZiI6MTc4NDIzMjAwMCwia2V5VmVyc2lvbiI6MTc4MzAxMjIyMzEzNCwicGF0aCI6Ii93YWxudXQtY29tcHV0ZS1yZXN1bHRzL3YyLzBlOTZhN2ZjMzc2OGY0ZjY3ZTA3ZmEwYTZkY2IzMzI5NDE3ZjliZGY3YTQyNzY0OGNmM2Q4OGEyNjkxYjJhMDQvcmVzdWx0In0.pJbjf0HLGPZUFzttWaMz1V2loswRAQ5UudLvYjIipCA' \
+            --output output/Reel_AutoGuard_Bateria_Voz_Latina_Neutra_Final.mp4
+          test -s output/Reel_AutoGuard_Bateria_Voz_Latina_Neutra_Final.mp4
 
-      - name: Publicar artefacto
+      - name: Publicar Reel final
         uses: actions/upload-artifact@v4
         with:
-          name: voz-latina-neutra-autoguard-ritmo
-          path: output/voz-latina-neutra-autoguard.wav
+          name: reel-autoguard-latino-final
+          path: output/Reel_AutoGuard_Bateria_Voz_Latina_Neutra_Final.mp4
           retention-days: 7
 
       - name: Finalizar transferencia
