@@ -36,3 +36,5 @@ jobs:
           git add assets/audio/latin-neutral-run-id.txt
           git diff --cached --quiet || git commit -m 'Registrar voz latina neutra final'
           git push
+
+# Activación 2026-07-16
