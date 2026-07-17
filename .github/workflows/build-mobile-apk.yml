@@ -1,0 +1,42 @@
+name: Build Autoguard Mobile APK
+
+on:
+  push:
+    branches: ["autoguard-mobile-v1"]
+  pull_request:
+    paths:
+      - "mobile-scanner/**"
+      - ".github/workflows/build-mobile-apk.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar proyecto Android
+        run: |
+          mkdir -p mobile-scanner/project
+          base64 --decode mobile-scanner/Autoguard_Mobile_Scanner_v1.0_Source.zip.b64 > /tmp/autoguard-mobile.zip
+          unzip -q /tmp/autoguard-mobile.zip -d mobile-scanner/project
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
+      - name: Compilar APK Android
+        run: gradle -p mobile-scanner/project assembleDebug --stacktrace
+
+      - name: Preparar APK con nombre Autoguard
+        run: cp mobile-scanner/project/app/build/outputs/apk/debug/app-debug.apk Autoguard_Mobile_Scanner_v1.0.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Autoguard-Mobile-Scanner-v1.0-APK
+          path: Autoguard_Mobile_Scanner_v1.0.apk
+          if-no-files-found: error
