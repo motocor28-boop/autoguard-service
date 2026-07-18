@@ -17,6 +17,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Preparar corrector RPM
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('mobile-scanner/pro-v2/fix_rpm_v21.py')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('pattern.subn(replacement, main, count=1)', 'pattern.subn(lambda _m: replacement, main, count=1)')
+          s = s.replace('query_pattern.subn(query_replacement, obd, count=1)', 'query_pattern.subn(lambda _m: query_replacement, obd, count=1)')
+          s = s.replace('sensor_pattern.subn(sensor_replacement, obd, count=1)', 'sensor_pattern.subn(lambda _m: sensor_replacement, obd, count=1)')
+          p.write_text(s, encoding='utf-8')
+          PY
       - name: Aplicar corrección RPM v2.1
         run: python mobile-scanner/pro-v2/fix_rpm_v21.py
       - name: Validar proyecto Android Pro
