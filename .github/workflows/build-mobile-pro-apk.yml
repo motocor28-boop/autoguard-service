@@ -30,6 +30,19 @@ jobs:
           PY
       - name: Aplicar corrección RPM v2.1
         run: python mobile-scanner/pro-v2/fix_rpm_v21.py
+      - name: Corregir escapes Java del patrón de voltaje
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/ObdClient.java')
+          s = p.read_text(encoding='utf-8')
+          old = r'Pattern.compile("(\d+(?:\.\d+)?)\s*V"'
+          new = r'Pattern.compile("(\\d+(?:\\.\\d+)?)\\s*V"'
+          if old not in s:
+              raise SystemExit('No se encontró patrón de voltaje para corregir')
+          s = s.replace(old, new)
+          p.write_text(s, encoding='utf-8')
+          PY
       - name: Validar proyecto Android Pro
         run: |
           test -f mobile-scanner/pro-v2/project/settings.gradle
