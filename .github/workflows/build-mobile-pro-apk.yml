@@ -33,8 +33,6 @@ jobs:
       - name: Validar proyecto Android Pro
         run: |
           test -f mobile-scanner/pro-v2/project/settings.gradle
-          test -f mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java
-          test -f mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/ObdClient.java
           grep -q "readSensorCycle" mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/ObdClient.java
           grep -q "Mobile Scanner Pro v2.1" mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java
       - uses: actions/setup-java@v4
@@ -45,7 +43,20 @@ jobs:
         with:
           gradle-version: "8.9"
       - name: Compilar APK Android Pro v2.1
-        run: gradle -p mobile-scanner/pro-v2/project assembleDebug --stacktrace
+        shell: bash
+        run: |
+          set +e
+          gradle -p mobile-scanner/pro-v2/project assembleDebug --stacktrace > build-v21.log 2>&1
+          code=$?
+          tail -n 120 build-v21.log
+          exit $code
+      - name: Subir registro de compilación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Autoguard-Mobile-Pro-v2.1-Build-Log
+          path: build-v21.log
+          if-no-files-found: warn
       - name: Preparar APK con nombre Autoguard
         run: cp mobile-scanner/pro-v2/project/app/build/outputs/apk/debug/app-debug.apk Autoguard_Mobile_Pro_v2.1_RPM_CORREGIDO.apk
       - uses: actions/upload-artifact@v4
