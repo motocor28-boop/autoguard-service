@@ -4,11 +4,11 @@ on:
   push:
     branches: ["autoguard-mobile-pro-v2"]
     paths:
-      - "mobile-scanner/pro-v2/project/**"
+      - "mobile-scanner/pro-v2/**"
       - ".github/workflows/build-mobile-pro-apk.yml"
   pull_request:
     paths:
-      - "mobile-scanner/pro-v2/project/**"
+      - "mobile-scanner/pro-v2/**"
       - ".github/workflows/build-mobile-pro-apk.yml"
   workflow_dispatch:
 
@@ -17,11 +17,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Aplicar corrección RPM v2.1
+        run: python mobile-scanner/pro-v2/fix_rpm_v21.py
       - name: Validar proyecto Android Pro
         run: |
           test -f mobile-scanner/pro-v2/project/settings.gradle
           test -f mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java
           test -f mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/ObdClient.java
+          grep -q "readSensorCycle" mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/ObdClient.java
+          grep -q "Mobile Scanner Pro v2.1" mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -29,12 +33,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Compilar APK Android Pro
+      - name: Compilar APK Android Pro v2.1
         run: gradle -p mobile-scanner/pro-v2/project assembleDebug --stacktrace
       - name: Preparar APK con nombre Autoguard
-        run: cp mobile-scanner/pro-v2/project/app/build/outputs/apk/debug/app-debug.apk Autoguard_Mobile_Pro_v2.0.apk
+        run: cp mobile-scanner/pro-v2/project/app/build/outputs/apk/debug/app-debug.apk Autoguard_Mobile_Pro_v2.1_RPM_CORREGIDO.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Autoguard-Mobile-Pro-v2.0-APK
-          path: Autoguard_Mobile_Pro_v2.0.apk
+          name: Autoguard-Mobile-Pro-v2.1-RPM-Corregido
+          path: Autoguard_Mobile_Pro_v2.1_RPM_CORREGIDO.apk
           if-no-files-found: error
