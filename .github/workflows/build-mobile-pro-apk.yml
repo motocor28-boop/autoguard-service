@@ -19,13 +19,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Reconstruir proyecto Android Pro
+      - name: Comprobar fragmentos del proyecto
         run: |
+          set -euxo pipefail
+          ls -la mobile-scanner/pro-v2/chunks
+          test -s mobile-scanner/pro-v2/chunks/part00.txt
+          test -s mobile-scanner/pro-v2/chunks/part01.txt
+          test -s mobile-scanner/pro-v2/chunks/part02.txt
+          wc -c mobile-scanner/pro-v2/chunks/part*.txt
+
+      - name: Reconstruir ZIP Android Pro
+        run: |
+          set -euxo pipefail
+          cat mobile-scanner/pro-v2/chunks/part00.txt mobile-scanner/pro-v2/chunks/part01.txt mobile-scanner/pro-v2/chunks/part02.txt > /tmp/autoguard-mobile-pro.b64
+          base64 --decode /tmp/autoguard-mobile-pro.b64 > /tmp/autoguard-mobile-pro.zip
+          unzip -t /tmp/autoguard-mobile-pro.zip
+
+      - name: Extraer proyecto Android Pro
+        run: |
+          set -euxo pipefail
           rm -rf mobile-scanner/pro-v2/project /tmp/autoguard-mobile-pro-src
           mkdir -p mobile-scanner/pro-v2/project /tmp/autoguard-mobile-pro-src
-          cat mobile-scanner/pro-v2/chunks/part*.txt > /tmp/autoguard-mobile-pro.b64
-          base64 --decode /tmp/autoguard-mobile-pro.b64 > /tmp/autoguard-mobile-pro.zip
           unzip -q /tmp/autoguard-mobile-pro.zip -d /tmp/autoguard-mobile-pro-src
+          find /tmp/autoguard-mobile-pro-src -maxdepth 3 -type f -print
           cp -R /tmp/autoguard-mobile-pro-src/Autoguard_Mobile_Pro_v2.0/. mobile-scanner/pro-v2/project/
           test -f mobile-scanner/pro-v2/project/settings.gradle
           test -f mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java
