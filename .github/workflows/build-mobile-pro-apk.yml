@@ -19,19 +19,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validar fragmento 00
-        run: echo "c776ba80c088a6c5f622af55fd3e8191602b86ffc4aef1ec7723c28c7b059eba  mobile-scanner/pro-v2/chunks/part00.txt" | sha256sum --check
-
-      - name: Validar fragmento 01
-        run: echo "ebf4ccf0bd38eb2482bdf36bf24254e3beba09890cce8b4076bfff1bfee8bb4d  mobile-scanner/pro-v2/chunks/part01.txt" | sha256sum --check
-
-      - name: Validar fragmento 02
-        run: echo "e84f562ef4ef1f491eb94fd4b78bc890af54c51156930860f314518d42e4f2c0  mobile-scanner/pro-v2/chunks/part02.txt" | sha256sum --check
+      - name: Validar fragmentos del proyecto
+        run: |
+          echo "c776ba80c088a6c5f622af55fd3e8191602b86ffc4aef1ec7723c28c7b059eba  mobile-scanner/pro-v2/chunks/part00.txt" | sha256sum --check
+          echo "b63420bbfb61ac81085a9679347b1af1ff584f468407dc577af7353cd7c730b3  mobile-scanner/pro-v2/chunks/part01_0.txt" | sha256sum --check
+          echo "d067d22dd0c3442d31d929d2ebc0c350418f3b05c61dd5f1d831060185d15476  mobile-scanner/pro-v2/chunks/part01_1.txt" | sha256sum --check
+          echo "8afa1ee087461cf187a5f6e0bccc9e42ac7cccee2f5aab9df19ac1fe0e11fbdb  mobile-scanner/pro-v2/chunks/part01_2.txt" | sha256sum --check
+          echo "e84f562ef4ef1f491eb94fd4b78bc890af54c51156930860f314518d42e4f2c0  mobile-scanner/pro-v2/chunks/part02.txt" | sha256sum --check
 
       - name: Reconstruir ZIP Android Pro
         run: |
           set -euxo pipefail
-          cat mobile-scanner/pro-v2/chunks/part00.txt mobile-scanner/pro-v2/chunks/part01.txt mobile-scanner/pro-v2/chunks/part02.txt > /tmp/autoguard-mobile-pro.b64
+          cat mobile-scanner/pro-v2/chunks/part00.txt \
+              mobile-scanner/pro-v2/chunks/part01_0.txt \
+              mobile-scanner/pro-v2/chunks/part01_1.txt \
+              mobile-scanner/pro-v2/chunks/part01_2.txt \
+              mobile-scanner/pro-v2/chunks/part02.txt > /tmp/autoguard-mobile-pro.b64
           echo "a166afaa2b31b4369edb0b5fd4879346d188fe1b563d2ac33e7d17b3ae65f8a1  /tmp/autoguard-mobile-pro.b64" | sha256sum --check
           base64 --decode /tmp/autoguard-mobile-pro.b64 > /tmp/autoguard-mobile-pro.zip
           unzip -t /tmp/autoguard-mobile-pro.zip
