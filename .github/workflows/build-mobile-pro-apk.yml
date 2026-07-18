@@ -19,29 +19,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Comprobar fragmentos del proyecto
-        run: |
-          set -euxo pipefail
-          ls -la mobile-scanner/pro-v2/chunks
-          test -s mobile-scanner/pro-v2/chunks/part00.txt
-          test -s mobile-scanner/pro-v2/chunks/part01.txt
-          test -s mobile-scanner/pro-v2/chunks/part02.txt
-          wc -c mobile-scanner/pro-v2/chunks/part*.txt
+      - name: Validar fragmento 00
+        run: echo "c776ba80c088a6c5f622af55fd3e8191602b86ffc4aef1ec7723c28c7b059eba  mobile-scanner/pro-v2/chunks/part00.txt" | sha256sum --check
+
+      - name: Validar fragmento 01
+        run: echo "ebf4ccf0bd38eb2482bdf36bf24254e3beba09890cce8b4076bfff1bfee8bb4d  mobile-scanner/pro-v2/chunks/part01.txt" | sha256sum --check
+
+      - name: Validar fragmento 02
+        run: echo "e84f562ef4ef1f491eb94fd4b78bc890af54c51156930860f314518d42e4f2c0  mobile-scanner/pro-v2/chunks/part02.txt" | sha256sum --check
 
       - name: Reconstruir ZIP Android Pro
         run: |
           set -euxo pipefail
           cat mobile-scanner/pro-v2/chunks/part00.txt mobile-scanner/pro-v2/chunks/part01.txt mobile-scanner/pro-v2/chunks/part02.txt > /tmp/autoguard-mobile-pro.b64
+          echo "a166afaa2b31b4369edb0b5fd4879346d188fe1b563d2ac33e7d17b3ae65f8a1  /tmp/autoguard-mobile-pro.b64" | sha256sum --check
           base64 --decode /tmp/autoguard-mobile-pro.b64 > /tmp/autoguard-mobile-pro.zip
           unzip -t /tmp/autoguard-mobile-pro.zip
 
       - name: Extraer proyecto Android Pro
         run: |
-          set -euxo pipefail
           rm -rf mobile-scanner/pro-v2/project /tmp/autoguard-mobile-pro-src
           mkdir -p mobile-scanner/pro-v2/project /tmp/autoguard-mobile-pro-src
           unzip -q /tmp/autoguard-mobile-pro.zip -d /tmp/autoguard-mobile-pro-src
-          find /tmp/autoguard-mobile-pro-src -maxdepth 3 -type f -print
           cp -R /tmp/autoguard-mobile-pro-src/Autoguard_Mobile_Pro_v2.0/. mobile-scanner/pro-v2/project/
           test -f mobile-scanner/pro-v2/project/settings.gradle
           test -f mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java
