@@ -1,0 +1,48 @@
+name: Build Autoguard Mobile Pro APK
+
+on:
+  push:
+    branches: ["autoguard-mobile-pro-v2"]
+    paths:
+      - "mobile-scanner/pro-v2/**"
+      - ".github/workflows/build-mobile-pro-apk.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruir proyecto Android Pro
+        run: |
+          rm -rf mobile-scanner/pro-v2/project /tmp/autoguard-mobile-pro-src
+          mkdir -p mobile-scanner/pro-v2/project /tmp/autoguard-mobile-pro-src
+          cat mobile-scanner/pro-v2/chunks/part*.txt > /tmp/autoguard-mobile-pro.b64
+          base64 --decode /tmp/autoguard-mobile-pro.b64 > /tmp/autoguard-mobile-pro.zip
+          unzip -q /tmp/autoguard-mobile-pro.zip -d /tmp/autoguard-mobile-pro-src
+          cp -R /tmp/autoguard-mobile-pro-src/Autoguard_Mobile_Pro_v2.0/. mobile-scanner/pro-v2/project/
+          test -f mobile-scanner/pro-v2/project/settings.gradle
+          test -f mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Compilar APK Android Pro
+        run: gradle -p mobile-scanner/pro-v2/project assembleDebug --stacktrace
+
+      - name: Preparar APK con nombre Autoguard
+        run: cp mobile-scanner/pro-v2/project/app/build/outputs/apk/debug/app-debug.apk Autoguard_Mobile_Pro_v2.0.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Autoguard-Mobile-Pro-v2.0-APK
+          path: Autoguard_Mobile_Pro_v2.0.apk
+          if-no-files-found: error
