@@ -1,5 +1,5 @@
-#define MyAppName "AUTOGUARD SCAN DIOS v6.2 NIVEL DIOS PREMIUM"
-#define MyAppVersion "6.2.1.2026.07"
+#define MyAppName "AUTOGUARD SCAN DIOS v6.2.2 NIVEL DIOS PREMIUM"
+#define MyAppVersion "6.2.2.2026.07"
 #define MyAppPublisher "Esteban Cortez Richards"
 #define MyAppExeName "AUTOGUARD_SCAN_DIOS_v6.2.exe"
 
@@ -10,7 +10,7 @@ AppVersion={#MyAppVersion}
 AppVerName={#MyAppName}
 AppPublisher={#MyAppPublisher}
 VersionInfoCompany={#MyAppPublisher}
-VersionInfoDescription=Diagnóstico automotriz Nivel Dios Premium Full HD con escaneo profundo y soluciones offline
+VersionInfoDescription=Diagnóstico automotriz Nivel Dios Premium con navegación por páginas, modo escáner y Full HD
 VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}
 DefaultDirName={localappdata}\Autoguard\Fusion Scanner DIOS v6.2
@@ -20,7 +20,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=output
-OutputBaseFilename=AUTOGUARD_SCAN_DIOS_v6.2_NIVEL_DIOS_PREMIUM_Setup
+OutputBaseFilename=AUTOGUARD_SCAN_DIOS_v6.2.2_NAVEGACION_PREMIUM_Setup
 SetupIconFile=autoguard.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2/ultra64
@@ -47,12 +47,12 @@ Name: "desktopicon"; Description: "Crear un acceso directo AUTO GUARD SERVICE en
 Source: "dist\AUTOGUARD_SCAN_DIOS_v6.2\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\AUTOGUARD SCAN DIOS v6.2 NIVEL DIOS PREMIUM"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
-Name: "{autodesktop}\AUTO GUARD SERVICE - SCAN DIOS v6.2"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{autoprograms}\AUTOGUARD SCAN DIOS v6.2.2 NIVEL DIOS PREMIUM"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
+Name: "{autodesktop}\AUTO GUARD SERVICE - SCAN DIOS v6.2.2"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 Name: "{autoprograms}\Desinstalar AUTOGUARD SCAN DIOS v6.2"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Ejecutar AUTOGUARD SCAN DIOS v6.2 NIVEL DIOS PREMIUM"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "Ejecutar AUTOGUARD SCAN DIOS v6.2.2 NIVEL DIOS PREMIUM"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\logs"
@@ -62,7 +62,7 @@ procedure CurPageChanged(CurPageID: Integer);
 begin
   if CurPageID = wpInstalling then
   begin
-    WizardForm.StatusLabel.Caption := 'Instalando AUTOGUARD SCAN DIOS v6.2 NIVEL DIOS PREMIUM...';
-    WizardForm.FilenameLabel.Caption := 'Copiando branding, interfaz limpia, relojes realistas, escaneo profundo, DTC, soluciones e informes';
+    WizardForm.StatusLabel.Caption := 'Instalando AUTOGUARD SCAN DIOS v6.2.2 NIVEL DIOS PREMIUM...';
+    WizardForm.FilenameLabel.Caption := 'Copiando menú principal, navegación por páginas, modo escáner, Full HD, DTC e informes';
   end;
 end;
