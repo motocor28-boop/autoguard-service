@@ -16,6 +16,7 @@ def main() -> None:
     required = [
         ROOT / "app.py",
         ROOT / "final_launcher.py",
+        ROOT / "navigation_premium_app.py",
         ROOT / "god_premium_app.py",
         ROOT / "premium_gauges.py",
         ROOT / "final_dios_app.py",
@@ -40,21 +41,32 @@ def main() -> None:
     require_markers(ROOT / "app.py", ("from final_launcher import main", "diagnostic_parsers"), "Arranque final")
     require_markers(
         ROOT / "final_launcher.py",
-        ("GodPremiumApp", "NIVEL_DIOS_PREMIUM", "enable_windows_dpi_awareness"),
+        ("NavigationPremiumApp", "NAV_VERSION", "enable_windows_dpi_awareness"),
         "Lanzador final",
+    )
+    require_markers(
+        ROOT / "navigation_premium_app.py",
+        (
+            "6.2.2 NIVEL DIOS PREMIUM",
+            "MENÚ PRINCIPAL",
+            "Sensores por sistema",
+            "MODO ESCÁNER",
+            "SALIR PANTALLA COMPLETA",
+            "DATOS DEL VEHÍCULO",
+            "class NavigationPremiumApp",
+        ),
+        "Navegación separada",
     )
     require_markers(
         ROOT / "god_premium_app.py",
         (
-            "6.2.1 NIVEL DIOS PREMIUM",
             "Osciloscopio ECU",
             "Escaneo y códigos",
             "Sin códigos activos",
             "CÓDIGOS BORRADOS DURANTE LA SESIÓN",
             "Borrado confirmado por ECU",
-            "GodPremiumApp",
         ),
-        "Interfaz limpia Nivel Dios",
+        "Diagnóstico limpio Nivel Dios",
     )
     require_markers(
         ROOT / "premium_gauges.py",
@@ -91,7 +103,7 @@ def main() -> None:
         ("AUTO GUARD", "SERVICE", "TU VEHÍCULO, NUESTRA PRIORIDAD", "autoguard.ico"),
         "Branding oficial",
     )
-    print("Fuente NIVEL DIOS PREMIUM limpia preparada para compilación Windows")
+    print("Fuente NIVEL DIOS PREMIUM con navegación por páginas preparada para Windows")
 
 
 if __name__ == "__main__":
