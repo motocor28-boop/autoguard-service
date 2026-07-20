@@ -1,0 +1,14 @@
+diff -ruN a/mobile-scanner/pro-v2/project/app/build.gradle b/mobile-scanner/pro-v2/project/app/build.gradle
+--- a/mobile-scanner/pro-v2/project/app/build.gradle	2026-07-18 00:37:56.000000000 +0000
++++ b/mobile-scanner/pro-v2/project/app/build.gradle	2026-07-18 01:22:07.449005836 +0000
+@@ -10,8 +10,8 @@
+         applicationId 'com.autoguard.mobilepro'
+         minSdk 29
+         targetSdk 35
+-        versionCode 20
+-        versionName '2.0.0-pro'
++        versionCode 21
++        versionName '2.1.0-pro'
+     }
+ 
+     buildTypes {

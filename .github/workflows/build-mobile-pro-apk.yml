@@ -1,0 +1,79 @@
+name: Build Autoguard Mobile Pro APK
+
+on:
+  push:
+    branches: ["autoguard-mobile-pro-v2"]
+    paths:
+      - "mobile-scanner/pro-v2/**"
+      - ".github/workflows/build-mobile-pro-apk.yml"
+  pull_request:
+    paths:
+      - "mobile-scanner/pro-v2/**"
+      - ".github/workflows/build-mobile-pro-apk.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar corrector RPM
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('mobile-scanner/pro-v2/fix_rpm_v21.py')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('pattern.subn(replacement, main, count=1)', 'pattern.subn(lambda _m: replacement, main, count=1)')
+          s = s.replace('query_pattern.subn(query_replacement, obd, count=1)', 'query_pattern.subn(lambda _m: query_replacement, obd, count=1)')
+          s = s.replace('sensor_pattern.subn(sensor_replacement, obd, count=1)', 'sensor_pattern.subn(lambda _m: sensor_replacement, obd, count=1)')
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Aplicar corrección RPM v2.1
+        run: python mobile-scanner/pro-v2/fix_rpm_v21.py
+      - name: Corregir escapes Java del patrón de voltaje
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/ObdClient.java')
+          s = p.read_text(encoding='utf-8')
+          old = r'Pattern.compile("(\d+(?:\.\d+)?)\s*V"'
+          new = r'Pattern.compile("(\\d+(?:\\.\\d+)?)\\s*V"'
+          if old not in s:
+              raise SystemExit('No se encontró patrón de voltaje para corregir')
+          s = s.replace(old, new)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Validar proyecto Android Pro
+        run: |
+          test -f mobile-scanner/pro-v2/project/settings.gradle
+          grep -q "readSensorCycle" mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/ObdClient.java
+          grep -q "Mobile Scanner Pro v2.1" mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Compilar APK Android Pro v2.1
+        shell: bash
+        run: |
+          set +e
+          gradle -p mobile-scanner/pro-v2/project assembleDebug --stacktrace > build-v21.log 2>&1
+          code=$?
+          tail -n 120 build-v21.log
+          exit $code
+      - name: Subir registro de compilación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Autoguard-Mobile-Pro-v2.1-Build-Log
+          path: build-v21.log
+          if-no-files-found: warn
+      - name: Preparar APK con nombre Autoguard
+        run: cp mobile-scanner/pro-v2/project/app/build/outputs/apk/debug/app-debug.apk Autoguard_Mobile_Pro_v2.1_RPM_CORREGIDO.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Autoguard-Mobile-Pro-v2.1-RPM-Corregido
+          path: Autoguard_Mobile_Pro_v2.1_RPM_CORREGIDO.apk
+          if-no-files-found: error
