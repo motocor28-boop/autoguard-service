@@ -47,8 +47,8 @@ Name: "desktopicon"; Description: "Crear un acceso directo en el escritorio"; Gr
 Source: "dist\AUTOGUARD_SCAN_DIOS_v6.2\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\AUTOGUARD SCAN DIOS v6.2"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\autoguard.ico"
-Name: "{autodesktop}\AUTOGUARD SCAN DIOS v6.2"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\autoguard.ico"; Tasks: desktopicon
+Name: "{autoprograms}\AUTOGUARD SCAN DIOS v6.2"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
+Name: "{autodesktop}\AUTOGUARD SCAN DIOS v6.2"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 Name: "{autoprograms}\Desinstalar AUTOGUARD SCAN DIOS v6.2"; Filename: "{uninstallexe}"
 
 [Run]
