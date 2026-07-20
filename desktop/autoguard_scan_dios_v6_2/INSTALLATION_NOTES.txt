@@ -1,22 +1,44 @@
-AUTOGUARD SCAN DIOS v6.2.1 — NIVEL DIOS PREMIUM
+AUTOGUARD SCAN DIOS v6.2.2 — NIVEL DIOS PREMIUM
 
 Autor: Esteban Cortez Richards
 Branding: AUTO GUARD SERVICE — Tu vehículo, nuestra prioridad
-Edición visual: aplicación limpia grafito/naranja, Full HD y escalado DPI
+Edición visual: navegación por páginas, modo escáner, Full HD y escalado DPI
 
 INSTALACIÓN
 - La aplicación se instala en:
   %LOCALAPPDATA%\Autoguard\Fusion Scanner DIOS v6.2
 - No requiere licencia, activación, bloqueo ni conexión a Internet para funcionar.
 - Incluye acceso directo AUTO GUARD SERVICE, menú Inicio y desinstalador de Windows.
-- Abre directamente el panel principal, sin pantalla de presentación bloqueante.
+- Abre en el MENÚ PRINCIPAL, sin pantalla de presentación bloqueante.
 - Utiliza escalado DPI por monitor para mantener textos, gráficos y controles nítidos.
+
+NAVEGACIÓN Y CONTROL DE VENTANA
+- Barra lateral ancha con letras grandes y acceso directo a cada página.
+- Orden de páginas:
+  1. Menú principal.
+  2. Datos en vivo.
+  3. Sensores por sistema.
+  4. Osciloscopio ECU.
+  5. Escaneo y códigos.
+  6. Escaneo profundo.
+  7. Pruebas guiadas.
+  8. Información ECU.
+  9. Informe Premium.
+  10. Historial.
+  11. Ajustes / conexión.
+  12. Ayuda.
+- Botón MODO ESCÁNER: abre Escaneo y códigos, activa pantalla completa y ejecuta el escaneo cuando existe conexión.
+- Botón PANTALLA COMPLETA / SALIR PANTALLA COMPLETA.
+- Botón VENTANA NORMAL para restaurar una ventana de tamaño convencional.
+- Tecla F11: alterna pantalla completa.
+- Tecla Esc: sale de pantalla completa.
+- Ctrl+M: activa o desactiva el modo escáner.
 
 INTERFAZ LIMPIA NIVEL DIOS PREMIUM
 - Branding AUTO GUARD SERVICE en cabecera, aplicación, ejecutable, instalador y acceso directo.
 - Diseño oscuro profesional con acentos naranjas y paneles técnicos ordenados.
 - Relojes vectoriales realistas con bisel metálico, escala despejada, aguja visible y lectura digital grande.
-- Menú lateral simplificado: Datos en vivo, Osciloscopio, Escaneo y códigos, Escaneo profundo, Pruebas, Información ECU, Informe Premium, Historial, Ajustes y Ayuda.
+- Datos en vivo separados del selector de sensores y del osciloscopio.
 - Sensores agrupados por sistema y ventanas individuales con valor, mínimo, promedio, máximo, gráfico, guía técnica y exportación CSV.
 - Captura JSON, exportación CSV y gráfica PNG Full HD.
 
@@ -56,6 +78,7 @@ CÓDIGOS Y SOLUCIONES OFFLINE
 - Los procedimientos son orientativos y deben confirmarse con información OEM del vehículo exacto.
 
 INFORME PDF PREMIUM
+- Formulario dividido en tres pestañas: Datos del vehículo, Diagnóstico y observaciones, Generar informe.
 - Datos del cliente, vehículo, VIN, ECU y protocolo.
 - Resumen ejecutivo y tabla de DTC.
 - Gráficos vectoriales con mínimos y máximos.
