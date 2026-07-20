@@ -1,2 +1,3 @@
 Validación final Windows solicitada el 2026-07-20.
 Objetivo: generar portable, probar apertura del panel principal y compilar Setup.exe.
+Reintento con flujo reutilizable reconocido por GitHub Actions.
