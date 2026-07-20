@@ -360,8 +360,12 @@ class ELM327Client:
             return "OK>"
         if command in {"0100", "0120", "0140", "0160"}:
             return "41" + command[2:] + "FFFFFFFF>"
-        if command in {"03", "07", "0A"}:
+        if command == "03":
             return "43 01 71 03 00 04 20 00 00>"
+        if command == "07":
+            return "47 01 71 00 00>"
+        if command == "0A":
+            return "4A 04 20 00 00>"
         if command == "04":
             return "44>"
         return "NO DATA>"
