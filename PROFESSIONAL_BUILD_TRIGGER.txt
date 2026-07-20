@@ -2,3 +2,4 @@ Compilar y validar SuperScan 2.0 Profesional con interfaz oscura, 12.133 solucio
 Segundo ciclo: publicar detalle exacto de cualquier fallo de prueba.
 Tercer ciclo: corregir compatibilidad de colores en gráficos del informe.
 Cuarto ciclo: corregir autoprueba del ejecutable gráfico sin consola.
+Quinto ciclo: registrar excepción exacta del ejecutable empaquetado.
