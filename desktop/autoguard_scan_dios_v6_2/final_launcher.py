@@ -5,8 +5,16 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox
 
+import final_dios_app
+import premium_app
 from final_widgets import enable_windows_dpi_awareness
-from god_premium_app import GOD_VERSION, GodPremiumApp
+from god_premium_app import GOD_BUILD, GOD_VERSION, GodPremiumApp
+
+# Keep all inherited information/help/report pages on the same final version.
+final_dios_app.FINAL_VERSION = GOD_VERSION
+final_dios_app.FINAL_BUILD = GOD_BUILD
+premium_app.APP_VERSION = GOD_VERSION
+premium_app.APP_BUILD = GOD_BUILD
 
 
 def main() -> None:
