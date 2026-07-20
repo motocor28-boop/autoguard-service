@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - superscan-clean-build
+  pull_request:
+    branches:
+      - superscan-clean-build
   workflow_dispatch:
 
 permissions:
