@@ -62,11 +62,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          "### Diagnóstico automático del catálogo DTC" | Out-File -FilePath catalog_comment.md -Encoding utf8
-          "```text" | Out-File -FilePath catalog_comment.md -Encoding utf8 -Append
-          Get-Content catalog_test.log | Out-File -FilePath catalog_comment.md -Encoding utf8 -Append
-          "```" | Out-File -FilePath catalog_comment.md -Encoding utf8 -Append
-          gh pr comment 4 --body-file catalog_comment.md
+          $body = Get-Content catalog_test.log -Raw
+          gh pr comment 4 --body $body
 
       - name: Detener si falla el catálogo
         if: steps.catalog.outcome == 'failure'
