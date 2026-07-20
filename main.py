@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import sys
-
-from superscan.logging_config import configure_logging, install_exception_hook
-from superscan.professional_ui import ProfessionalSuperScanApp
+import traceback
+from pathlib import Path
 
 
 def main() -> None:
+    from superscan.logging_config import configure_logging, install_exception_hook
+    from superscan.professional_ui import ProfessionalSuperScanApp
+
     logger = configure_logging()
     install_exception_hook(logger)
     app = ProfessionalSuperScanApp(logger)
@@ -30,12 +32,21 @@ def selftest() -> int:
     assert numpy.__version__
     assert matplotlib.__version__
     assert reportlab.Version
-    # El ejecutable es de tipo GUI y no dispone de stdout. El código 0 confirma
-    # la autoprueba sin intentar escribir en una consola inexistente.
     return 0
+
+
+def run_selftest_with_diagnostics() -> int:
+    """Ejecuta la autoprueba y registra cualquier error aunque no exista consola."""
+    diagnostic = Path.cwd() / "SUPERSCAN_SELFTEST_ERROR.txt"
+    try:
+        diagnostic.unlink(missing_ok=True)
+        return selftest()
+    except BaseException:
+        diagnostic.write_text(traceback.format_exc(), encoding="utf-8")
+        return 1
 
 
 if __name__ == "__main__":
     if "--selftest" in sys.argv:
-        raise SystemExit(selftest())
+        raise SystemExit(run_selftest_with_diagnostics())
     main()
