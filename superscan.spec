@@ -1,24 +1,36 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_all, collect_submodules
 
-matplotlib_datas = collect_data_files('matplotlib')
-reportlab_datas = collect_data_files('reportlab')
-hidden = collect_submodules('matplotlib.backends') + collect_submodules('reportlab')
+numpy_datas, numpy_binaries, numpy_hidden = collect_all('numpy')
+matplotlib_datas, matplotlib_binaries, matplotlib_hidden = collect_all('matplotlib')
+reportlab_datas, reportlab_binaries, reportlab_hidden = collect_all('reportlab')
 
-analysis = Analysis(
-    ['main.py'],
-    pathex=['.'],
-    binaries=[],
-    datas=matplotlib_datas + reportlab_datas,
-    hiddenimports=hidden + [
+hidden = sorted(set(
+    numpy_hidden
+    + matplotlib_hidden
+    + reportlab_hidden
+    + collect_submodules('matplotlib.backends')
+    + [
         'serial',
         'serial.tools.list_ports_windows',
         'tkinter',
         'tkinter.ttk',
         'sqlite3',
         'matplotlib.backends.backend_tkagg',
-    ],
+        'matplotlib.backends.backend_agg',
+        'superscan.professional_ui',
+        'superscan.professional_reporting',
+        'superscan.solution_engine',
+    ]
+))
+
+analysis = Analysis(
+    ['main.py'],
+    pathex=['.'],
+    binaries=numpy_binaries + matplotlib_binaries + reportlab_binaries,
+    datas=numpy_datas + matplotlib_datas + reportlab_datas,
+    hiddenimports=hidden,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -37,7 +49,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -51,7 +63,7 @@ coll = COLLECT(
     analysis.binaries,
     analysis.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name='SuperScan 2.0',
 )
