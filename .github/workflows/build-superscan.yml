@@ -1,4 +1,4 @@
-name: Build SuperScan 2.0
+name: Build SuperScan 2.0 R2
 
 on:
   push:
@@ -32,6 +32,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
+          python -c "import numpy, matplotlib, reportlab; print('NumPy', numpy.__version__); print('Matplotlib', matplotlib.__version__)"
 
       - name: Validar sintaxis
         shell: pwsh
@@ -56,24 +57,30 @@ jobs:
         shell: pwsh
         run: python -m PyInstaller --noconfirm --clean superscan.spec
 
-      - name: Verificar ejecutable compilado
+      - name: Probar ejecutable compilado y NumPy
         shell: pwsh
         run: |
           $exe = 'dist\SuperScan 2.0\SuperScan 2.0.exe'
           if (-not (Test-Path $exe)) { throw "No se generó $exe" }
           $size = (Get-Item $exe).Length
           if ($size -lt 500000) { throw "Ejecutable demasiado pequeño: $size bytes" }
-          "Ejecutable: $exe" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8
-          "Tamaño ejecutable: $size bytes" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
-          "Pruebas: catálogo, decodificación y simulador completados correctamente" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
-          "Base DTC: 12133 registros verificados" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
-          "Simulador: conexión, escaneo, VIN, DTC, combustible y borrado verificados" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
+          $marker = Join-Path $PWD 'runtime_selftest_dist.txt'
+          $env:SUPERSCAN_SELFTEST_MARKER = $marker
+          $process = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Autoprueba del ejecutable falló: $($process.ExitCode)" }
+          if (-not (Test-Path $marker)) { throw "El ejecutable no creó la validación runtime" }
+          $runtime = Get-Content $marker -Raw
+          if ($runtime -notmatch 'OK' -or $runtime -notmatch 'DTC=12133') { throw "Resultado runtime inválido: $runtime" }
+          "Ejecutable: $exe" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0_R2.txt -Encoding utf8
+          "Tamaño ejecutable: $size bytes" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0_R2.txt -Encoding utf8 -Append
+          "Runtime compilado: $runtime" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0_R2.txt -Encoding utf8 -Append
+          "Pruebas: catálogo, decodificación y simulador completados correctamente" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0_R2.txt -Encoding utf8 -Append
 
       - name: Instalar Inno Setup
         shell: pwsh
         run: choco install innosetup --no-progress -y
 
-      - name: Crear Setup.exe
+      - name: Crear Setup.exe R2
         shell: pwsh
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
@@ -81,24 +88,42 @@ jobs:
           & $iscc installer.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup finalizó con código $LASTEXITCODE" }
 
+      - name: Instalar silenciosamente y probar paquete instalado
+        shell: pwsh
+        run: |
+          $setup = 'output\SuperScan 2.0 Setup R2.exe'
+          if (-not (Test-Path $setup)) { throw "No se generó el instalador R2" }
+          $install = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/TASKS=""' -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "Instalación silenciosa falló: $($install.ExitCode)" }
+          $installedExe = Join-Path $env:LOCALAPPDATA 'SuperScan\2.0 Final Mejorado\SuperScan 2.0.exe'
+          if (-not (Test-Path $installedExe)) { throw "No se encontró el ejecutable instalado: $installedExe" }
+          $marker = Join-Path $PWD 'runtime_selftest_installed.txt'
+          $env:SUPERSCAN_SELFTEST_MARKER = $marker
+          $process = Start-Process -FilePath $installedExe -ArgumentList '--self-test' -WorkingDirectory (Split-Path $installedExe) -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Autoprueba instalada falló: $($process.ExitCode)" }
+          if (-not (Test-Path $marker)) { throw "La instalación no creó la validación runtime" }
+          $runtime = Get-Content $marker -Raw
+          if ($runtime -notmatch 'OK' -or $runtime -notmatch 'DTC=12133') { throw "Runtime instalado inválido: $runtime" }
+          "Instalación limpia y ejecución instalada: OK" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0_R2.txt -Encoding utf8 -Append
+          "Runtime instalado: $runtime" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0_R2.txt -Encoding utf8 -Append
+
       - name: Calcular SHA-256 y completar validación
         shell: pwsh
         run: |
-          $setup = 'output\SuperScan 2.0 Setup.exe'
-          if (-not (Test-Path $setup)) { throw "No se generó el instalador" }
+          $setup = 'output\SuperScan 2.0 Setup R2.exe'
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
-          "$hash  SuperScan 2.0 Setup.exe" | Out-File -FilePath 'output\SuperScan 2.0 Setup.exe.sha256.txt' -Encoding ascii
-          "Instalador: $setup" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
-          "SHA-256: $hash" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
-          Copy-Item VALIDACION_SUPERSCAN_2.0.txt output\VALIDACION_SUPERSCAN_2.0.txt
+          "$hash  SuperScan 2.0 Setup R2.exe" | Out-File -FilePath 'output\SuperScan 2.0 Setup R2.exe.sha256.txt' -Encoding ascii
+          "Instalador: $setup" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0_R2.txt -Encoding utf8 -Append
+          "SHA-256: $hash" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0_R2.txt -Encoding utf8 -Append
+          Copy-Item VALIDACION_SUPERSCAN_2.0_R2.txt output\VALIDACION_SUPERSCAN_2.0_R2.txt
 
-      - name: Publicar instalador
+      - name: Publicar instalador R2
         uses: actions/upload-artifact@v4
         with:
-          name: SuperScan-2.0-Setup-Windows
+          name: SuperScan-2.0-Setup-R2-Windows
           path: |
-            output/SuperScan 2.0 Setup.exe
-            output/SuperScan 2.0 Setup.exe.sha256.txt
-            output/VALIDACION_SUPERSCAN_2.0.txt
+            output/SuperScan 2.0 Setup R2.exe
+            output/SuperScan 2.0 Setup R2.exe.sha256.txt
+            output/VALIDACION_SUPERSCAN_2.0_R2.txt
           if-no-files-found: error
           retention-days: 30
