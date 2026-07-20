@@ -5,3 +5,4 @@ Cuarto ciclo: publicar el error exacto en la revisión técnica.
 Quinto ciclo: corregir la publicación del diagnóstico DTC.
 Sexto ciclo: ejecutar pruebas con el intérprete Python correcto.
 Séptimo ciclo: incluir binarios nativos de NumPy y validar el ejecutable instalado R2.
+Octavo ciclo: compilar SuperScan 2.0 Profesional R3 con solución guiada, 12.133 planes offline, gráficos HD e informe profesional.
