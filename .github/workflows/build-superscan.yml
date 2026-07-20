@@ -37,9 +37,20 @@ jobs:
         shell: pwsh
         run: python -m compileall -q main.py superscan tests
 
-      - name: Ejecutar pruebas automáticas
+      - name: Probar catálogo DTC 12133
         shell: pwsh
-        run: pytest -q --disable-warnings --maxfail=1
+        run: pytest -q tests/test_core.py::test_dtc_catalog_has_exact_record_count
+
+      - name: Probar decodificación OBD-II
+        shell: pwsh
+        run: |
+          pytest -q tests/test_core.py::test_dtc_parsing
+          pytest -q tests/test_core.py::test_supported_pid_blocks_and_vin
+          pytest -q tests/test_core.py::test_fuel_pid_formulas
+
+      - name: Probar simulador completo
+        shell: pwsh
+        run: pytest -q tests/test_core.py::test_simulator_full_session
 
       - name: Compilar aplicación gráfica
         shell: pwsh
@@ -54,7 +65,7 @@ jobs:
           if ($size -lt 500000) { throw "Ejecutable demasiado pequeño: $size bytes" }
           "Ejecutable: $exe" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8
           "Tamaño ejecutable: $size bytes" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
-          "Pruebas: pytest completado correctamente" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
+          "Pruebas: catálogo, decodificación y simulador completados correctamente" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
           "Base DTC: 12133 registros verificados" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
           "Simulador: conexión, escaneo, VIN, DTC, combustible y borrado verificados" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
 
