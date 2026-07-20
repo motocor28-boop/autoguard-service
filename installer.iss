@@ -1,5 +1,5 @@
 #define MyAppName "SuperScan 2.0 Final Mejorado"
-#define MyAppVersion "2.0.0"
+#define MyAppVersion "2.0.1"
 #define MyAppPublisher "AutoGuard Servicios"
 #define MyAppExeName "SuperScan 2.0.exe"
 
@@ -17,7 +17,7 @@ DefaultDirName={localappdata}\SuperScan\2.0 Final Mejorado
 DefaultGroupName=SuperScan 2.0
 DisableProgramGroupPage=yes
 OutputDir=output
-OutputBaseFilename=SuperScan 2.0 Setup
+OutputBaseFilename=SuperScan 2.0 Setup R2
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
