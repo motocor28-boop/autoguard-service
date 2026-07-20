@@ -65,11 +65,14 @@ jobs:
       - name: Preparar fuente del parche
         run: python prepare_build.py
 
-      - name: Validar sintaxis, pruebas e informe maestro
-        run: |
-          python -m compileall -q app.py final_launcher.py navigation_premium_app.py god_premium_app.py premium_gauges.py final_dios_app.py final_widgets.py option_b_app.py premium_app.py deep_scan.py deep_scan_full.py diagnostic_parsers.py core.py dtc_database.py reporting.py validate_report_master.py
-          python -m pytest -q
-          python validate_report_master.py
+      - name: Validar sintaxis Python
+        run: python -m compileall -q app.py final_launcher.py navigation_premium_app.py god_premium_app.py premium_gauges.py final_dios_app.py final_widgets.py option_b_app.py premium_app.py deep_scan.py deep_scan_full.py diagnostic_parsers.py core.py dtc_database.py reporting.py validate_report_master.py
+
+      - name: Ejecutar pruebas automáticas
+        run: python -m pytest -q
+
+      - name: Generar y validar PDF maestro
+        run: python validate_report_master.py
 
       - name: Validar contenido del parche
         shell: pwsh
