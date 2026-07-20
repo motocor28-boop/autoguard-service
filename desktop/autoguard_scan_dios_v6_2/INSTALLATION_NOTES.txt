@@ -1,21 +1,70 @@
-AUTOGUARD SCAN DIOS v6.2
+AUTOGUARD SCAN DIOS v6.2.1 — NIVEL DIOS PREMIUM
 
 Autor: Esteban Cortez Richards
+Branding: AUTO GUARD SERVICE — Tu vehículo, nuestra prioridad
+Edición visual: aplicación limpia grafito/naranja, Full HD y escalado DPI
 
 INSTALACIÓN
-- La aplicación se instala en la carpeta local del usuario.
-- No requiere licencias, activación ni conexión a Internet para funcionar.
-- Incluye desinstalador desde Aplicaciones instaladas y el menú Inicio.
-- Al terminar, se abre directamente el panel principal; no existe pantalla de presentación.
+- La aplicación se instala en:
+  %LOCALAPPDATA%\Autoguard\Fusion Scanner DIOS v6.2
+- No requiere licencia, activación, bloqueo ni conexión a Internet para funcionar.
+- Incluye acceso directo AUTO GUARD SERVICE, menú Inicio y desinstalador de Windows.
+- Abre directamente el panel principal, sin pantalla de presentación bloqueante.
+- Utiliza escalado DPI por monitor para mantener textos, gráficos y controles nítidos.
 
-FUNCIONES PRINCIPALES
-- ELM327 por WiFi, COM y simulador.
-- Detección automática de protocolo OBD-II.
-- DTC confirmados, pendientes y permanentes.
-- Base offline ampliada de códigos P, B, C y U.
-- Datos en vivo y flujómetro PID 015E con estimación identificada desde MAF.
-- Osciloscopio de telemetría ECU, pruebas guiadas, consola e informe PDF.
-- Hoja independiente de información y planificación de la aplicación.
+INTERFAZ LIMPIA NIVEL DIOS PREMIUM
+- Branding AUTO GUARD SERVICE en cabecera, aplicación, ejecutable, instalador y acceso directo.
+- Diseño oscuro profesional con acentos naranjas y paneles técnicos ordenados.
+- Relojes vectoriales realistas con bisel metálico, escala despejada, aguja visible y lectura digital grande.
+- Menú lateral simplificado: Datos en vivo, Osciloscopio, Escaneo y códigos, Escaneo profundo, Pruebas, Información ECU, Informe Premium, Historial, Ajustes y Ayuda.
+- Sensores agrupados por sistema y ventanas individuales con valor, mínimo, promedio, máximo, gráfico, guía técnica y exportación CSV.
+- Captura JSON, exportación CSV y gráfica PNG Full HD.
 
-LIMITACIÓN TÉCNICA
-ELM327 entrega datos calculados por la ECU. La forma de onda eléctrica directa de CKP, CMP, inyectores, bobinas, CAN o PWM requiere un osciloscopio físico, sondas adecuadas y procedimientos seguros.
+PÁGINA ESCANEO Y CÓDIGOS
+- Muestra únicamente los códigos que la ECU informa durante el escaneo.
+- Cuando no existen códigos, presenta el estado claro: SIN CÓDIGOS ACTIVOS.
+- Cada código encontrado muestra estado, severidad, sistema, descripción, causas y posible solución paso a paso.
+- Después de un borrado confirmado, los códigos pasan al registro CÓDIGOS BORRADOS DURANTE LA SESIÓN con fecha, descripción y resultado.
+- El borrado no sustituye la reparación de la causa. Debe realizarse un nuevo escaneo para confirmar que el código no reaparece.
+
+OSCILOSCOPIO ECU
+- Página dedicada de telemetría multicanal con hasta ocho sensores simultáneos.
+- Selección por Motor, Combustible, Admisión, Emisiones, Temperaturas y Eléctrico/operación.
+- Ventanas temporales de 5, 10, 20, 30 y 60 segundos.
+- Pausa, continuación, valores actuales, mínimos y máximos.
+- La aplicación grafica valores calculados y transmitidos por la ECU. Las señales eléctricas directas CKP, CMP, bobinas, inyectores, PWM y CAN H/L requieren hardware de osciloscopio externo.
+
+ESCANEO PROFUNDO DE SOLO LECTURA
+- Identifica adaptador, protocolo y voltaje informado por el ELM327.
+- Lee MIL, monitores de preparación y cantidad de DTC.
+- Consulta bloques PID desde 0100 hasta 01E0.
+- Interroga y conserva en bruto todos los PID anunciados por la ECU, incluso cuando no existe fórmula universal.
+- Recupera freeze frame Mode 02.
+- Lee DTC confirmados, pendientes y permanentes mediante modos 03, 07 y 0A.
+- Captura pruebas Mode 05 y Mode 06.
+- Descubre Mode 09: VIN, ID de calibración, CVN, nombre ECU y PID de información publicados.
+- Detecta módulos que responden por CAN OBD-II.
+- Sondeo UDS de solo lectura: F190, F18C, F189 y 19 02 FF cuando el módulo lo permite.
+- Exporta expediente JSON con resultados interpretados y respuestas crudas.
+- No activa actuadores, no codifica, no modifica adaptativos y no programa ECU.
+
+CÓDIGOS Y SOLUCIONES OFFLINE
+- Base SQLite ampliada con códigos P, B, C y U genéricos y específicos por fabricante.
+- Búsqueda por código, descripción y fabricante.
+- Fichas con sistema, severidad, síntomas, causas, sensores relacionados, herramientas, proceso paso a paso y validación final.
+- Incluye U0123 y miles de definiciones adicionales.
+- Los procedimientos son orientativos y deben confirmarse con información OEM del vehículo exacto.
+
+INFORME PDF PREMIUM
+- Datos del cliente, vehículo, VIN, ECU y protocolo.
+- Resumen ejecutivo y tabla de DTC.
+- Gráficos vectoriales con mínimos y máximos.
+- Causas, síntomas, plan de acción, diagnóstico paso a paso, herramientas y validación por código.
+- Estado SIN CÓDIGOS ACTIVOS cuando corresponde.
+- Observaciones, conclusión técnica y firmas.
+
+ALCANCE TÉCNICO REAL
+- No existe un comando universal para todos los parámetros propietarios de todas las marcas.
+- ELM327 puede estar limitado por velocidad, memoria, tamaño de trama, CAN-FD, DoIP, redes secundarias y seguridad OEM.
+- Datos propietarios completos, funciones bidireccionales, codificación y programación pueden requerir J2534, DoIP, CAN-FD, interfaz OEM, archivos DBC/ODX y acceso autorizado.
+- Un DTC identifica una condición detectada; no confirma por sí solo una pieza defectuosa.
