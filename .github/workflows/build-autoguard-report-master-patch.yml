@@ -1,0 +1,163 @@
+name: Build AUTOGUARD Report Master Patch
+
+on:
+  push:
+    branches:
+      - autoguard-v6-2-2-informe-master-patch
+    paths:
+      - "desktop/autoguard_scan_dios_v6_2/**"
+      - ".github/workflows/build-autoguard-report-master-patch.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "desktop/autoguard_scan_dios_v6_2/**"
+      - ".github/workflows/build-autoguard-report-master-patch.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-report-patch:
+    runs-on: windows-latest
+    timeout-minutes: 70
+    defaults:
+      run:
+        working-directory: desktop/autoguard_scan_dios_v6_2
+
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: desktop/autoguard_scan_dios_v6_2/requirements.txt
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pypdf
+
+      - name: Generar base DTC y branding
+        run: |
+          python build_dtc_db.py
+          python make_icon.py
+          python prepare_build.py
+
+      - name: Validar sintaxis, pruebas e informe maestro
+        run: |
+          python -m compileall -q app.py final_launcher.py navigation_premium_app.py god_premium_app.py premium_gauges.py final_dios_app.py final_widgets.py option_b_app.py premium_app.py deep_scan.py deep_scan_full.py diagnostic_parsers.py core.py dtc_database.py reporting.py validate_report_master.py
+          python -m pytest -q
+          python validate_report_master.py
+
+      - name: Validar contenido del parche
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $report = Get-Content "reporting.py" -Raw -Encoding UTF8
+          foreach ($marker in @(
+            "INFORME TÉCNICO DE DIAGNÓSTICO Y",
+            "GRÁFICO VECTORIAL HD",
+            "PLAN DE TRABAJO RECOMENDADO",
+            "CHECKLIST DE ENTREGA",
+            "RECOMENDACIÓN FINAL",
+            "_review_suggestions"
+          )) {
+            if ($report -notmatch [regex]::Escape($marker)) { throw "Falta marcador en reporting.py: $marker" }
+          }
+          if ($report -match '\["VERSIÓN"') { throw "La fila de versión volvió al informe" }
+          $patch = Get-Content "patch_installer.iss" -Raw -Encoding UTF8
+          foreach ($marker in @("CreateInstallationBackup", "taskkill.exe", "robocopy.exe", "Informe_Premium_")) {
+            if ($patch -notmatch [regex]::Escape($marker)) { throw "Falta función del parche: $marker" }
+          }
+          Write-Host "Contenido de informe y parche validado"
+
+      - name: Compilar aplicación actualizada
+        run: pyinstaller --clean --noconfirm autoguard_scan.spec
+
+      - name: Validar ejecutable actualizado
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $exe = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\AUTOGUARD_SCAN_DIOS_v6.2.exe"
+          $db = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\_internal\data\autoguard_dtc.sqlite"
+          if (!(Test-Path $exe)) { throw "No se generó el ejecutable" }
+          if (!(Test-Path $db)) { throw "No se incorporó la base DTC" }
+          $process = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -PassThru
+          Start-Sleep -Seconds 15
+          if ($process.HasExited) { throw "La aplicación actualizada se cerró al iniciar. Código: $($process.ExitCode)" }
+          Stop-Process -Id $process.Id -Force
+          Write-Host "Aplicación actualizada estable durante 15 segundos"
+
+      - name: Instalar Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Compilar parche instalable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) { throw "No se encontró Inno Setup 6" }
+          & $iscc "patch_installer.iss"
+          if ($LASTEXITCODE -ne 0) { throw "La compilación del parche terminó con error $LASTEXITCODE" }
+          $patch = "patch_output\AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe"
+          if (!(Test-Path $patch)) { throw "No se generó el parche instalable" }
+
+      - name: Probar instalación real del parche
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installDir = Join-Path $env:LOCALAPPDATA "Autoguard\Fusion Scanner DIOS v6.2"
+          $backupRoot = Join-Path $env:LOCALAPPDATA "Autoguard\Backups"
+          New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+          Copy-Item "dist\AUTOGUARD_SCAN_DIOS_v6.2\*" $installDir -Recurse -Force
+          $patch = Join-Path $PWD "patch_output\AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe"
+          $process = Start-Process -FilePath $patch -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw "El parche falló durante la instalación de prueba: $($process.ExitCode)" }
+          $exe = Join-Path $installDir "AUTOGUARD_SCAN_DIOS_v6.2.exe"
+          if (!(Test-Path $exe)) { throw "El parche no dejó el ejecutable instalado" }
+          $backups = @(Get-ChildItem $backupRoot -Directory -Filter "Informe_Premium_*" -ErrorAction SilentlyContinue)
+          if ($backups.Count -lt 1) { throw "El parche no creó respaldo automático" }
+          $app = Start-Process -FilePath $exe -WorkingDirectory $installDir -PassThru
+          Start-Sleep -Seconds 15
+          if ($app.HasExited) { throw "La aplicación parcheada se cerró al iniciar. Código: $($app.ExitCode)" }
+          Stop-Process -Id $app.Id -Force
+          Write-Host "Parche instalado, respaldo creado y aplicación estable"
+
+      - name: Crear paquete y hashes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force -Path "patch_release" | Out-Null
+          $patch = "patch_output\AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe"
+          Copy-Item $patch "patch_release\AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe" -Force
+          Copy-Item "PATCH_NOTES_INFORME_MAESTRO.txt" "patch_release\LEEME_PARCE_INFORME_MAESTRO.txt" -Force
+          $hash = (Get-FileHash $patch -Algorithm SHA256).Hash.ToLower()
+          "$hash  AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe" | Set-Content "patch_release\SHA256.txt" -Encoding ascii
+          @(
+            "AUTOGUARD SCAN DIOS v6.2.2 - PARCHE INFORME MAESTRO",
+            "Autor: Esteban Cortez Richards",
+            "Formato: informe técnico de diagnóstico y reparación aprobado",
+            "Gráficos: vectoriales HD con mínimo, promedio, máximo e interpretación",
+            "Contenido: descripción, causas, efectos, sugerencias, pasos, plan y checklist",
+            "Seguridad: detección de instalación, cierre automático y respaldo previo",
+            "Build: $env:GITHUB_SHA"
+          ) | Set-Content "patch_release\MANIFIESTO_PARCE.txt" -Encoding utf8
+
+      - name: Publicar parche de Informe Maestro
+        uses: actions/upload-artifact@v4
+        with:
+          name: AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_WINDOWS
+          path: |
+            desktop/autoguard_scan_dios_v6_2/patch_release/AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe
+            desktop/autoguard_scan_dios_v6_2/patch_release/SHA256.txt
+            desktop/autoguard_scan_dios_v6_2/patch_release/LEEME_PARCE_INFORME_MAESTRO.txt
+            desktop/autoguard_scan_dios_v6_2/patch_release/MANIFIESTO_PARCE.txt
+          if-no-files-found: error
+          retention-days: 30
