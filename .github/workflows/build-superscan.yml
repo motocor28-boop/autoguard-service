@@ -39,7 +39,20 @@ jobs:
 
       - name: Probar catálogo DTC 12133
         shell: pwsh
-        run: pytest -q tests/test_core.py::test_dtc_catalog_has_exact_record_count
+        run: |
+          pytest -vv tests/test_core.py::test_dtc_catalog_has_exact_record_count *> catalog_test.log
+          $code = $LASTEXITCODE
+          Get-Content catalog_test.log
+          exit $code
+
+      - name: Publicar diagnóstico del catálogo
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SuperScan-catalog-test-log
+          path: catalog_test.log
+          if-no-files-found: warn
+          retention-days: 2
 
       - name: Probar decodificación OBD-II
         shell: pwsh
