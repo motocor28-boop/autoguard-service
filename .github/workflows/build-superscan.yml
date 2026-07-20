@@ -63,12 +63,23 @@ jobs:
         run: python -m PyInstaller --noconfirm --clean superscan.spec
 
       - name: Probar ejecutable compilado
+        id: exe_test
+        continue-on-error: true
         shell: pwsh
         run: |
           $exe = 'dist\SuperScan 2.0\SuperScan 2.0.exe'
           if (-not (Test-Path $exe)) { throw "No se generó $exe" }
+          Remove-Item SUPERSCAN_SELFTEST_ERROR.txt -ErrorAction SilentlyContinue
           & $exe --selftest
-          if ($LASTEXITCODE -ne 0) { throw "Falló la autoprueba del ejecutable: $LASTEXITCODE" }
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            if (Test-Path SUPERSCAN_SELFTEST_ERROR.txt) {
+              Get-Content SUPERSCAN_SELFTEST_ERROR.txt
+            } else {
+              "El ejecutable devolvió código $code sin crear un registro de excepción." | Out-File SUPERSCAN_SELFTEST_ERROR.txt -Encoding utf8
+            }
+            throw "Falló la autoprueba del ejecutable: $code"
+          }
           $size = (Get-Item $exe).Length
           if ($size -lt 500000) { throw "Ejecutable demasiado pequeño: $size bytes" }
           "SUPERSCAN 2.0 PROFESIONAL" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Encoding utf8
@@ -78,6 +89,22 @@ jobs:
           "Base de soluciones: 12.133 procedimientos offline" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
           "Informe profesional: PDF con gráficos y planes de acción probado" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
           "Simulador: conexión, VIN, DTC, PIDs, combustible y borrado aprobados" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
+
+      - name: Publicar diagnóstico del ejecutable
+        if: steps.exe_test.outcome == 'failure' && github.event_name == 'pull_request'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if (-not (Test-Path SUPERSCAN_SELFTEST_ERROR.txt)) {
+            "La autoprueba del ejecutable falló sin archivo de diagnóstico." | Out-File SUPERSCAN_SELFTEST_ERROR.txt -Encoding utf8
+          }
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file SUPERSCAN_SELFTEST_ERROR.txt
+
+      - name: Detener si falla el ejecutable
+        if: steps.exe_test.outcome == 'failure'
+        shell: pwsh
+        run: throw 'Falló la autoprueba del ejecutable empaquetado.'
 
       - name: Instalar Inno Setup
         shell: pwsh
@@ -100,8 +127,12 @@ jobs:
           if ($process.ExitCode -ne 0) { throw "Instalación silenciosa falló: $($process.ExitCode)" }
           $installed = Join-Path $env:LOCALAPPDATA 'SuperScan\2.0 Profesional\SuperScan 2.0.exe'
           if (-not (Test-Path $installed)) { throw "No se encontró la aplicación instalada: $installed" }
+          Remove-Item SUPERSCAN_SELFTEST_ERROR.txt -ErrorAction SilentlyContinue
           & $installed --selftest
-          if ($LASTEXITCODE -ne 0) { throw "Falló la autoprueba desde la instalación real" }
+          if ($LASTEXITCODE -ne 0) {
+            if (Test-Path SUPERSCAN_SELFTEST_ERROR.txt) { Get-Content SUPERSCAN_SELFTEST_ERROR.txt }
+            throw "Falló la autoprueba desde la instalación real"
+          }
           "Instalación real y autoprueba aprobadas" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
 
       - name: Calcular SHA-256
