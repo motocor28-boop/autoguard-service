@@ -3,15 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 import os
 
-APP_NAME = "SuperScan 2.0 Final Mejorado"
-APP_VERSION = "2.0.0"
+APP_NAME = "SuperScan 2.0 Profesional"
+APP_VERSION = "2.1.0"
 APP_PUBLISHER = "AutoGuard Servicios"
 AUTHOR = "Esteban Cortez"
 
 LOCAL_APPDATA = Path(os.getenv("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-APP_DATA_DIR = LOCAL_APPDATA / "SuperScan" / "2.0 Final Mejorado"
-LOG_FILE = APP_DATA_DIR / "SuperScan_2.0_runtime.log"
-DB_FILE = APP_DATA_DIR / "superscan_dtc.sqlite3"
+APP_DATA_DIR = LOCAL_APPDATA / "SuperScan" / "2.0 Profesional"
+LOG_FILE = APP_DATA_DIR / "SuperScan_2.0_Profesional_runtime.log"
+DB_FILE = APP_DATA_DIR / "superscan_profesional.sqlite3"
 REPORT_DIR = Path.home() / "Documents" / "AutoGuard" / "SuperScan" / "Informes"
 
 APP_DATA_DIR.mkdir(parents=True, exist_ok=True)
