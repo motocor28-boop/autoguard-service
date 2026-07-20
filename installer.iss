@@ -1,5 +1,5 @@
-#define MyAppName "SuperScan 2.0 Final Mejorado"
-#define MyAppVersion "2.0.0"
+#define MyAppName "SuperScan 2.0 Profesional"
+#define MyAppVersion "2.1.0"
 #define MyAppPublisher "AutoGuard Servicios"
 #define MyAppExeName "SuperScan 2.0.exe"
 
@@ -10,14 +10,14 @@ AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 VersionInfoCompany={#MyAppPublisher}
-VersionInfoDescription=Diagnóstico automotriz multimarca OBD-II
+VersionInfoDescription=Diagnóstico automotriz profesional multimarca OBD-II
 VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}
-DefaultDirName={localappdata}\SuperScan\2.0 Final Mejorado
-DefaultGroupName=SuperScan 2.0
+DefaultDirName={localappdata}\SuperScan\2.0 Profesional
+DefaultGroupName=SuperScan 2.0 Profesional
 DisableProgramGroupPage=yes
 OutputDir=output
-OutputBaseFilename=SuperScan 2.0 Setup
+OutputBaseFilename=SuperScan 2.0 Profesional Setup
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -37,14 +37,14 @@ Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 Source: "dist\SuperScan 2.0\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\SuperScan 2.0"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
-Name: "{autodesktop}\SuperScan 2.0"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{autoprograms}\SuperScan 2.0 Profesional"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
+Name: "{autodesktop}\SuperScan 2.0 Profesional"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Crear acceso directo en el escritorio"; GroupDescription: "Accesos directos:"; Flags: checkedonce
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Iniciar SuperScan 2.0"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "Iniciar SuperScan 2.0 Profesional"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
@@ -53,5 +53,5 @@ Type: filesandordirs; Name: "{app}"
 procedure InitializeWizard;
 begin
   WizardForm.WelcomeLabel2.Caption :=
-    'Este asistente instalará SuperScan 2.0 con conexión COM, Wi-Fi y simulador, lectura DTC, datos en vivo, gráficos, Freeze Frame, monitores, base offline ampliada e informes PDF.';
+    'Instala SuperScan 2.0 Profesional con interfaz AutoGuard, conexión COM/Wi-Fi/simulador, 12.133 DTC, soluciones offline, datos en vivo, gráficos HD e informes PDF con planes de acción.';
 end;
