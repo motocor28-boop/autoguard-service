@@ -1,23 +1,33 @@
-# AutoGuard Servicios
+# SuperScan 2.0 Final Mejorado
 
-Sitio oficial de **AutoGuard Servicios**, mecánica móvil profesional en Antofagasta y alrededores.
+Aplicación de diagnóstico automotriz multimarca para Windows desarrollada para AutoGuard Servicios.
 
-## Propuesta de servicio
+## Funciones integradas
 
-- Diagnóstico y evaluación con escáner básico OBD2.
-- Frenos delanteros y frenos completos.
-- Diagnóstico e instalación de batería.
-- Asistencia rápida y servicio nocturno.
-- Revisión de tren delantero, suspensión y dirección.
-- Chequeos preventivos y revisión precompra.
+- Conexión ELM327 por puerto COM y Wi-Fi TCP.
+- Simulador integrado con protocolo ISO 15765-4 CAN.
+- Detección automática del protocolo OBD-II.
+- Identificación VIN y disponibilidad de PIDs.
+- Lectura de DTC confirmados, pendientes y permanentes.
+- Borrado de códigos con confirmación.
+- Base offline de 12.133 códigos y descripciones propias/genéricas.
+- Datos en vivo, incluidos PID 015E (caudal de combustible) y PID 012F (nivel de combustible).
+- Gráficos técnicos HD con historial de sesión.
+- Freeze Frame y monitores OBD-II.
+- Informe PDF AutoGuard.
+- Registro rotativo de comunicación y errores.
+- Instalación por usuario en `%LOCALAPPDATA%\SuperScan\2.0 Final Mejorado`.
 
-## Contacto
+## Validación
 
-- WhatsApp: [+56 9 7748 2821](https://wa.me/56977482821)
-- Correo: [autoguard.chile.servicios@outlook.com](mailto:autoguard.chile.servicios@outlook.com)
-- Cobertura: Antofagasta y alrededores.
-- Sitio: [AutoGuard Servicios](https://motocor28-boop.github.io/autoguard-service/)
+```powershell
+pip install -r requirements.txt
+pytest -q
+pyinstaller --noconfirm --clean superscan.spec
+```
 
-## Información comercial
+El instalador se genera con Inno Setup mediante `installer.iss`.
 
-Los precios publicados son valores desde y corresponden principalmente a mano de obra. Los repuestos no están incluidos; al incorporarlos, el valor cambia según marca, modelo y disponibilidad.
+## Separación de proyectos
+
+Este código pertenece exclusivamente a SuperScan 2.0 y no utiliza módulos, nombres ni archivos de AutoGuard Scan DIOS v6.2.

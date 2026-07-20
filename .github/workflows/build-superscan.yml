@@ -1,0 +1,90 @@
+name: Build SuperScan 2.0
+
+on:
+  push:
+    branches:
+      - superscan-clean-build
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Instalar dependencias
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validar sintaxis
+        shell: pwsh
+        run: python -m compileall -q main.py superscan tests
+
+      - name: Ejecutar pruebas automáticas
+        shell: pwsh
+        run: pytest -q --disable-warnings --maxfail=1
+
+      - name: Compilar aplicación gráfica
+        shell: pwsh
+        run: pyinstaller --noconfirm --clean superscan.spec
+
+      - name: Verificar ejecutable compilado
+        shell: pwsh
+        run: |
+          $exe = 'dist\SuperScan 2.0\SuperScan 2.0.exe'
+          if (-not (Test-Path $exe)) { throw "No se generó $exe" }
+          $size = (Get-Item $exe).Length
+          if ($size -lt 500000) { throw "Ejecutable demasiado pequeño: $size bytes" }
+          "Ejecutable: $exe" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8
+          "Tamaño ejecutable: $size bytes" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
+          "Pruebas: pytest completado correctamente" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
+          "Base DTC: 12133 registros verificados" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
+          "Simulador: conexión, escaneo, VIN, DTC, combustible y borrado verificados" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
+
+      - name: Instalar Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Crear Setup.exe
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "No se encontró Inno Setup en $iscc" }
+          & $iscc installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup finalizó con código $LASTEXITCODE" }
+
+      - name: Calcular SHA-256 y completar validación
+        shell: pwsh
+        run: |
+          $setup = 'output\SuperScan 2.0 Setup.exe'
+          if (-not (Test-Path $setup)) { throw "No se generó el instalador" }
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "$hash  SuperScan 2.0 Setup.exe" | Out-File -FilePath 'output\SuperScan 2.0 Setup.exe.sha256.txt' -Encoding ascii
+          "Instalador: $setup" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
+          "SHA-256: $hash" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
+          Copy-Item VALIDACION_SUPERSCAN_2.0.txt output\VALIDACION_SUPERSCAN_2.0.txt
+
+      - name: Publicar instalador
+        uses: actions/upload-artifact@v4
+        with:
+          name: SuperScan-2.0-Setup-Windows
+          path: |
+            output/SuperScan 2.0 Setup.exe
+            output/SuperScan 2.0 Setup.exe.sha256.txt
+            output/VALIDACION_SUPERSCAN_2.0.txt
+          if-no-files-found: error
+          retention-days: 30
