@@ -4,3 +4,4 @@ Tercer ciclo: exportar el detalle de la prueba del catálogo DTC.
 Cuarto ciclo: publicar el error exacto en la revisión técnica.
 Quinto ciclo: corregir la publicación del diagnóstico DTC.
 Sexto ciclo: ejecutar pruebas con el intérprete Python correcto.
+Séptimo ciclo: incluir binarios nativos de NumPy y validar el ejecutable instalado R2.
