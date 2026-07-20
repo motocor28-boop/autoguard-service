@@ -43,11 +43,27 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install pypdf
 
-      - name: Generar base DTC y branding
+      - name: Generar base DTC con reintentos
+        shell: pwsh
         run: |
-          python build_dtc_db.py
-          python make_icon.py
-          python prepare_build.py
+          $ErrorActionPreference = "Continue"
+          $ok = $false
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            Write-Host "Intento $attempt de generación de base DTC"
+            python build_dtc_db.py
+            if ($LASTEXITCODE -eq 0) {
+              $ok = $true
+              break
+            }
+            Start-Sleep -Seconds 10
+          }
+          if (-not $ok) { throw "No fue posible generar la base DTC después de tres intentos" }
+
+      - name: Generar branding AUTO GUARD SERVICE
+        run: python make_icon.py
+
+      - name: Preparar fuente del parche
+        run: python prepare_build.py
 
       - name: Validar sintaxis, pruebas e informe maestro
         run: |
@@ -137,7 +153,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "patch_release" | Out-Null
           $patch = "patch_output\AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe"
           Copy-Item $patch "patch_release\AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe" -Force
-          Copy-Item "PATCH_NOTES_INFORME_MAESTRO.txt" "patch_release\LEEME_PARCE_INFORME_MAESTRO.txt" -Force
+          Copy-Item "PATCH_NOTES_INFORME_MAESTRO.txt" "patch_release\LEEME_PARCHE_INFORME_MAESTRO.txt" -Force
           $hash = (Get-FileHash $patch -Algorithm SHA256).Hash.ToLower()
           "$hash  AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe" | Set-Content "patch_release\SHA256.txt" -Encoding ascii
           @(
@@ -148,7 +164,7 @@ jobs:
             "Contenido: descripción, causas, efectos, sugerencias, pasos, plan y checklist",
             "Seguridad: detección de instalación, cierre automático y respaldo previo",
             "Build: $env:GITHUB_SHA"
-          ) | Set-Content "patch_release\MANIFIESTO_PARCE.txt" -Encoding utf8
+          ) | Set-Content "patch_release\MANIFIESTO_PARCHE.txt" -Encoding utf8
 
       - name: Publicar parche de Informe Maestro
         uses: actions/upload-artifact@v4
@@ -157,7 +173,7 @@ jobs:
           path: |
             desktop/autoguard_scan_dios_v6_2/patch_release/AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe
             desktop/autoguard_scan_dios_v6_2/patch_release/SHA256.txt
-            desktop/autoguard_scan_dios_v6_2/patch_release/LEEME_PARCE_INFORME_MAESTRO.txt
-            desktop/autoguard_scan_dios_v6_2/patch_release/MANIFIESTO_PARCE.txt
+            desktop/autoguard_scan_dios_v6_2/patch_release/LEEME_PARCHE_INFORME_MAESTRO.txt
+            desktop/autoguard_scan_dios_v6_2/patch_release/MANIFIESTO_PARCHE.txt
           if-no-files-found: error
           retention-days: 30
