@@ -1,3 +1,2 @@
-Build limpio solicitado el 2026-07-20.
-Estado público de compilaciones:
-https://api.github.com/repos/motocor28-boop/autoguard-service/actions/runs?branch=main&per_page=20
+Validación final Windows solicitada el 2026-07-20.
+Objetivo: generar portable, probar apertura del panel principal y compilar Setup.exe.
