@@ -1,4 +1,4 @@
-from premium_app import main
+from option_b_app import main
 
 
 if __name__ == "__main__":
