@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   build-windows:
@@ -38,12 +40,12 @@ jobs:
         run: python -m compileall -q main.py superscan tests
 
       - name: Probar catálogo DTC 12133
+        id: catalog
+        continue-on-error: true
         shell: pwsh
         run: |
-          pytest -vv tests/test_core.py::test_dtc_catalog_has_exact_record_count *> catalog_test.log
-          $code = $LASTEXITCODE
-          Get-Content catalog_test.log
-          exit $code
+          pytest -vv tests/test_core.py::test_dtc_catalog_has_exact_record_count 2>&1 | Tee-Object -FilePath catalog_test.log
+          exit $LASTEXITCODE
 
       - name: Publicar diagnóstico del catálogo
         if: always()
@@ -53,6 +55,23 @@ jobs:
           path: catalog_test.log
           if-no-files-found: warn
           retention-days: 2
+
+      - name: Informar detalle del fallo en PR
+        if: steps.catalog.outcome == 'failure' && github.event_name == 'pull_request'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          "### Diagnóstico automático del catálogo DTC" | Out-File -FilePath catalog_comment.md -Encoding utf8
+          "```text" | Out-File -FilePath catalog_comment.md -Encoding utf8 -Append
+          Get-Content catalog_test.log | Out-File -FilePath catalog_comment.md -Encoding utf8 -Append
+          "```" | Out-File -FilePath catalog_comment.md -Encoding utf8 -Append
+          gh pr comment 4 --body-file catalog_comment.md
+
+      - name: Detener si falla el catálogo
+        if: steps.catalog.outcome == 'failure'
+        shell: pwsh
+        run: throw "Falló la validación del catálogo DTC; revise el comentario automático."
 
       - name: Probar decodificación OBD-II
         shell: pwsh
