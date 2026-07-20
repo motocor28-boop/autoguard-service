@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from deep_scan import discover_headers, parse_readiness, parse_uds_ascii, parse_uds_dtcs
+from deep_scan import discover_headers, parse_readiness
+from diagnostic_parsers import parse_uds_ascii, parse_uds_dtcs
 
 
 def test_parse_readiness_status() -> None:
@@ -25,10 +26,15 @@ def test_discover_29bit_header() -> None:
     assert modules[0][1] == "18DA10F1"
 
 
-def test_parse_uds_identification() -> None:
-    response = "7E8 10 14 62 F1 90 56 46\r7E8 21 31 41 42 43 44 45 46\r7E8 22 47 48 31 32 33 34 35\r7E8 23 36 37 38 39 30 00 00\r>"
+def test_parse_uds_identification_multiframe() -> None:
+    response = (
+        "7E8 10 14 62 F1 90 56 46\r"
+        "7E8 21 31 41 42 43 44 45 46\r"
+        "7E8 22 47 48 31 32 33 34 35\r"
+        "7E8 23 36 37 38 39 30 00 00\r>"
+    )
     value = parse_uds_ascii(response, "F190")
-    assert "VF1ABCDEF" in value
+    assert value.startswith("VF1ABCDEFGH1234567890"[:17])
 
 
 def test_parse_uds_dtc_records() -> None:
