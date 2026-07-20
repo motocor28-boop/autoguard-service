@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   build-windows:
@@ -38,8 +39,24 @@ jobs:
         run: python -m compileall -q main.py superscan tests
 
       - name: Ejecutar pruebas automáticas completas
+        id: pytest
+        continue-on-error: true
         shell: pwsh
-        run: python -m pytest -q --disable-warnings --maxfail=1
+        run: |
+          python -m pytest -q --disable-warnings --maxfail=1 *>&1 | Tee-Object -FilePath pytest-professional.log
+          exit $LASTEXITCODE
+
+      - name: Publicar diagnóstico de pruebas
+        if: steps.pytest.outcome == 'failure' && github.event_name == 'pull_request'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file pytest-professional.log
+
+      - name: Detener si fallan las pruebas
+        if: steps.pytest.outcome == 'failure'
+        shell: pwsh
+        run: throw 'Fallaron las pruebas automáticas. Revisar el diagnóstico publicado.'
 
       - name: Compilar aplicación profesional
         shell: pwsh
