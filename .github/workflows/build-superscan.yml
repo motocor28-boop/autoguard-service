@@ -70,8 +70,8 @@ jobs:
           $exe = 'dist\SuperScan 2.0\SuperScan 2.0.exe'
           if (-not (Test-Path $exe)) { throw "No se generó $exe" }
           Remove-Item SUPERSCAN_SELFTEST_ERROR.txt -ErrorAction SilentlyContinue
-          & $exe --selftest
-          $code = $LASTEXITCODE
+          $selfTestProcess = Start-Process -FilePath $exe -ArgumentList '--selftest' -Wait -PassThru
+          $code = $selfTestProcess.ExitCode
           if ($code -ne 0) {
             if (Test-Path SUPERSCAN_SELFTEST_ERROR.txt) {
               Get-Content SUPERSCAN_SELFTEST_ERROR.txt
@@ -128,10 +128,10 @@ jobs:
           $installed = Join-Path $env:LOCALAPPDATA 'SuperScan\2.0 Profesional\SuperScan 2.0.exe'
           if (-not (Test-Path $installed)) { throw "No se encontró la aplicación instalada: $installed" }
           Remove-Item SUPERSCAN_SELFTEST_ERROR.txt -ErrorAction SilentlyContinue
-          & $installed --selftest
-          if ($LASTEXITCODE -ne 0) {
+          $installedTest = Start-Process -FilePath $installed -ArgumentList '--selftest' -Wait -PassThru
+          if ($installedTest.ExitCode -ne 0) {
             if (Test-Path SUPERSCAN_SELFTEST_ERROR.txt) { Get-Content SUPERSCAN_SELFTEST_ERROR.txt }
-            throw "Falló la autoprueba desde la instalación real"
+            throw "Falló la autoprueba desde la instalación real: $($installedTest.ExitCode)"
           }
           "Instalación real y autoprueba aprobadas" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
 
