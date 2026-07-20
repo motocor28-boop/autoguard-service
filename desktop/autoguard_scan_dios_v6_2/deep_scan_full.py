@@ -21,6 +21,11 @@ class DeepScannerFull(DeepScanner):
     information PIDs are discovered dynamically and queried as raw data.
     """
 
+    def _supported_pids(self, result: DeepScanResult) -> list[int]:
+        if str(getattr(self.client, "_mode", "")).startswith("sim"):
+            return sorted(self.client.supported_pids())
+        return super()._supported_pids(result)
+
     def _standard_values(self, result: DeepScanResult) -> None:
         for pid in result.supported_pids:
             response = self._command(result, f"PID_RAW_{pid:02X}", f"01{pid:02X}")
@@ -28,15 +33,18 @@ class DeepScannerFull(DeepScanner):
             if pid not in PID_DEFINITIONS:
                 continue
             try:
-                value = parse_pid_value(pid, data)
+                value = self.client.query_pid(pid)
             except Exception:
-                continue
+                try:
+                    value = parse_pid_value(pid, data)
+                except Exception:
+                    continue
             name, unit = PID_DEFINITIONS[pid]
             result.live_values[f"01{pid:02X}"] = {
                 "name": name,
                 "value": value,
                 "unit": unit,
-                "raw": data.hex(" ").upper(),
+                "raw": data.hex(" ").upper() if data else "",
             }
 
         obd_response = self._command(result, "OBD_STANDARD", "011C")
@@ -84,10 +92,13 @@ class DeepScannerFull(DeepScanner):
         # Query the principal standardized information PIDs even if the support
         # mask is absent or malformed, because some ECUs still answer them.
         for pid in (0x02, 0x04, 0x06, 0x08, 0x0A):
-            responses.setdefault(
-                pid,
-                self._command(result, f"MODE09_DIRECT_{pid:02X}", f"09{pid:02X}", timeout=6.0),
-            )
+            if pid not in responses:
+                responses[pid] = self._command(
+                    result,
+                    f"MODE09_DIRECT_{pid:02X}",
+                    f"09{pid:02X}",
+                    timeout=6.0,
+                )
 
         mapping = {
             0x02: ("VIN", True),
