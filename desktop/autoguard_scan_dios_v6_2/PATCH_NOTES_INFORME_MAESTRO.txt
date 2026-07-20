@@ -1,0 +1,32 @@
+AUTOGUARD SCAN DIOS v6.2.2
+PARCHE INFORME MAESTRO PREMIUM
+
+Este parche actualiza el generador de informes técnicos sin borrar la configuración, historial ni registros del usuario.
+
+MEJORAS INCLUIDAS
+- Formato maestro basado en el informe técnico AUTOGUARD aprobado.
+- Portada profesional con número de informe, vehículo, cliente, prioridad y alcance.
+- Eliminación de la fila de versión visible en el PDF.
+- Tabla de códigos con descripción, causas probables y efectos posibles.
+- Gráficos vectoriales HD con mínimo, promedio, máximo e interpretación técnica.
+- Sugerencias de revisión específicas según código y sistema.
+- Procedimientos numerados de diagnóstico y reparación.
+- Subinforme técnico por cada DTC.
+- Plan de trabajo recomendado.
+- Checklist de entrega y validación final.
+- Conclusión técnica y recomendación final.
+- Estado SIN CÓDIGOS ACTIVOS cuando la ECU no informa DTC.
+
+INSTALACIÓN
+1. Cierre AUTOGUARD SCAN DIOS.
+2. Ejecute el parche.
+3. El instalador detectará la carpeta existente.
+4. Se creará un respaldo automático antes de reemplazar archivos.
+5. Al finalizar se podrá abrir la aplicación actualizada.
+
+RESPALDO
+El respaldo se guarda en:
+%LOCALAPPDATA%\Autoguard\Backups\Informe_Premium_<fecha_hora>
+
+REQUISITO
+Debe existir una instalación previa de AUTOGUARD SCAN DIOS v6.2.2.
