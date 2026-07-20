@@ -1,0 +1,21 @@
+AUTOGUARD SCAN DIOS v6.2
+
+Autor: Esteban Cortez Richards
+
+INSTALACIÓN
+- La aplicación se instala en la carpeta local del usuario.
+- No requiere licencias, activación ni conexión a Internet para funcionar.
+- Incluye desinstalador desde Aplicaciones instaladas y el menú Inicio.
+- Al terminar, se abre directamente el panel principal; no existe pantalla de presentación.
+
+FUNCIONES PRINCIPALES
+- ELM327 por WiFi, COM y simulador.
+- Detección automática de protocolo OBD-II.
+- DTC confirmados, pendientes y permanentes.
+- Base offline ampliada de códigos P, B, C y U.
+- Datos en vivo y flujómetro PID 015E con estimación identificada desde MAF.
+- Osciloscopio de telemetría ECU, pruebas guiadas, consola e informe PDF.
+- Hoja independiente de información y planificación de la aplicación.
+
+LIMITACIÓN TÉCNICA
+ELM327 entrega datos calculados por la ECU. La forma de onda eléctrica directa de CKP, CMP, inyectores, bobinas, CAN o PWM requiere un osciloscopio físico, sondas adecuadas y procedimientos seguros.
