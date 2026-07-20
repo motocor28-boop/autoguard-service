@@ -3,3 +3,4 @@ Segundo ciclo: publicar detalle exacto de cualquier fallo de prueba.
 Tercer ciclo: corregir compatibilidad de colores en gráficos del informe.
 Cuarto ciclo: corregir autoprueba del ejecutable gráfico sin consola.
 Quinto ciclo: registrar excepción exacta del ejecutable empaquetado.
+Sexto ciclo: validar correctamente el proceso GUI mediante Start-Process.
