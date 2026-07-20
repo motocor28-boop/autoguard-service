@@ -49,3 +49,9 @@ jobs:
             autoguard_voz_espanol_latino.vtt
             guion.txt
           retention-days: 7
+
+  compilar-autoguard-scan:
+    name: Compilar AUTOGUARD SCAN DIOS v6.2
+    uses: ./.github/workflows/build-autoguard-scan.yml
+    permissions:
+      contents: read
