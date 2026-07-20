@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - superscan-professional-r3-release-build5
+  pull_request:
+    branches:
+      - superscan-professional-r3-release-build5
   workflow_dispatch:
 
 permissions:
