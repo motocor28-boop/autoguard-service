@@ -1,10 +1,10 @@
-name: Build AUTOGUARD SCAN DIOS v6.2 PREMIUM
+name: Build AUTOGUARD SCAN DIOS v6.2 OPTION B DEEP SCAN
 
 on:
   push:
     branches:
       - main
-      - autoguard-scan-dios-v6-2-premium-orange
+      - autoguard-v6-2-option-b-deep-scan
     paths:
       - "desktop/autoguard_scan_dios_v6_2/**"
       - ".github/workflows/build-autoguard-scan.yml"
@@ -23,7 +23,7 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
-    timeout-minutes: 50
+    timeout-minutes: 55
     defaults:
       run:
         working-directory: desktop/autoguard_scan_dios_v6_2
@@ -50,13 +50,13 @@ jobs:
       - name: Generar logo e icono HD
         run: python make_icon.py
 
-      - name: Preparar fuente Premium para Windows
+      - name: Preparar fuente Opción B para Windows
         run: python prepare_build.py
 
       - name: Validar sintaxis e importación
         run: |
-          python -m compileall -q app.py premium_app.py core.py dtc_database.py reporting.py build_dtc_db.py make_icon.py prepare_build.py
-          python -c "import premium_app; import reporting; import core; import dtc_database; print('Importación Premium correcta')"
+          python -m compileall -q app.py option_b_app.py premium_app.py deep_scan.py core.py dtc_database.py reporting.py build_dtc_db.py make_icon.py prepare_build.py
+          python -c "import option_b_app; import premium_app; import deep_scan; import reporting; import core; import dtc_database; print('Importación Opción B Deep Scan correcta')"
 
       - name: Ejecutar pruebas automáticas
         run: python -m pytest -q
@@ -83,6 +83,19 @@ jobs:
           print(f"DTC únicos: {unique_codes}; definiciones: {definitions}; soluciones: {solutions}")
           '@ | python -
 
+      - name: Validar motor de escaneo profundo
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          @'
+          from deep_scan import discover_headers, parse_readiness, parse_uds_dtcs
+          assert discover_headers("7E8 06 41 00 BE 3F A8 13\r>")
+          readiness = parse_readiness("41 01 82 07 E8 00 >")
+          assert readiness["mil_encendida"] is True
+          assert parse_uds_dtcs("59 02 FF 01 23 45 08 >")
+          print("Motor Deep Scan validado")
+          '@ | python -
+
       - name: Compilar aplicación onedir
         run: pyinstaller --clean --noconfirm autoguard_scan.spec
 
@@ -100,7 +113,7 @@ jobs:
           Write-Host "Ejecutable: $exe"
           Write-Host "Base DTC: $db"
 
-      - name: Prueba de apertura del panel principal Premium
+      - name: Prueba de apertura Opción B con Deep Scan
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -108,18 +121,18 @@ jobs:
           $process = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -PassThru
           Start-Sleep -Seconds 12
           if ($process.HasExited) {
-            $log = Join-Path $env:LOCALAPPDATA "Autoguard\logs\AUTOGUARD_INICIO_ERROR.log"
+            $log = Join-Path $env:LOCALAPPDATA "Autoguard\logs\AUTOGUARD_OPTION_B_INICIO_ERROR.log"
             if (Test-Path $log) { Get-Content $log }
             throw "La aplicación se cerró durante la prueba de inicio. Código: $($process.ExitCode)"
           }
           Stop-Process -Id $process.Id -Force
-          Write-Host "El panel Premium permaneció activo durante 12 segundos."
+          Write-Host "La interfaz B con escaneo profundo permaneció activa durante 12 segundos."
 
       - name: Instalar Inno Setup
         shell: pwsh
         run: choco install innosetup --no-progress -y
 
-      - name: Compilar instalador Premium
+      - name: Compilar instalador Opción B
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -127,42 +140,42 @@ jobs:
           if (!(Test-Path $iscc)) { throw "No se encontró Inno Setup 6" }
           & $iscc "installer.iss"
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup terminó con error $LASTEXITCODE" }
-          $setup = "output\AUTOGUARD_SCAN_DIOS_v6.2_PREMIUM_Setup.exe"
-          if (!(Test-Path $setup)) { throw "No se generó el Setup Premium" }
+          $setup = "output\AUTOGUARD_SCAN_DIOS_v6.2_OPTION_B_DEEP_SCAN_Setup.exe"
+          if (!(Test-Path $setup)) { throw "No se generó el Setup Opción B Deep Scan" }
 
       - name: Crear paquete portátil, manifiesto y hashes
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
           New-Item -ItemType Directory -Force -Path "output" | Out-Null
-          $portable = "output\AUTOGUARD_SCAN_DIOS_v6.2_PREMIUM_PORTABLE.zip"
+          $portable = "output\AUTOGUARD_SCAN_DIOS_v6.2_OPTION_B_DEEP_SCAN_PORTABLE.zip"
           if (Test-Path $portable) { Remove-Item $portable -Force }
           Compress-Archive -Path "dist\AUTOGUARD_SCAN_DIOS_v6.2\*" -DestinationPath $portable -CompressionLevel Optimal
-          $setup = "output\AUTOGUARD_SCAN_DIOS_v6.2_PREMIUM_Setup.exe"
+          $setup = "output\AUTOGUARD_SCAN_DIOS_v6.2_OPTION_B_DEEP_SCAN_Setup.exe"
           $setupHash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
           $portableHash = (Get-FileHash $portable -Algorithm SHA256).Hash.ToLower()
           @(
-            "$setupHash  AUTOGUARD_SCAN_DIOS_v6.2_PREMIUM_Setup.exe",
-            "$portableHash  AUTOGUARD_SCAN_DIOS_v6.2_PREMIUM_PORTABLE.zip"
+            "$setupHash  AUTOGUARD_SCAN_DIOS_v6.2_OPTION_B_DEEP_SCAN_Setup.exe",
+            "$portableHash  AUTOGUARD_SCAN_DIOS_v6.2_OPTION_B_DEEP_SCAN_PORTABLE.zip"
           ) | Set-Content -Path "output\SHA256.txt" -Encoding ascii
           Copy-Item "INSTALLATION_NOTES.txt" "output\NOTAS_DE_INSTALACION.txt" -Force
           @(
-            "AUTOGUARD SCAN DIOS v6.2 PREMIUM",
+            "AUTOGUARD SCAN DIOS v6.2 OPTION B DEEP SCAN",
             "Autor: Esteban Cortez Richards",
-            "Interfaz: grafito y naranja profesional",
+            "Interfaz: Opción B grafito y naranja profesional",
+            "Escaneo: PID 0100-01E0, Mode 09, freeze frame, Mode 06, DTC 03/07/0A y UDS de solo lectura",
             "Base: DTC P/B/C/U y soluciones offline",
-            "Sensores: PIDs estándar soportados por ECU",
             "Informe: PDF Premium con gráficos y planes de acción",
             "Build: $env:GITHUB_SHA"
           ) | Set-Content -Path "output\MANIFIESTO.txt" -Encoding utf8
 
-      - name: Publicar instalador y portable Premium
+      - name: Publicar instalador y portable Opción B
         uses: actions/upload-artifact@v4
         with:
-          name: AUTOGUARD_SCAN_DIOS_v6.2_PREMIUM_WINDOWS
+          name: AUTOGUARD_SCAN_DIOS_v6.2_OPTION_B_DEEP_SCAN_WINDOWS
           path: |
-            desktop/autoguard_scan_dios_v6_2/output/AUTOGUARD_SCAN_DIOS_v6.2_PREMIUM_Setup.exe
-            desktop/autoguard_scan_dios_v6_2/output/AUTOGUARD_SCAN_DIOS_v6.2_PREMIUM_PORTABLE.zip
+            desktop/autoguard_scan_dios_v6_2/output/AUTOGUARD_SCAN_DIOS_v6.2_OPTION_B_DEEP_SCAN_Setup.exe
+            desktop/autoguard_scan_dios_v6_2/output/AUTOGUARD_SCAN_DIOS_v6.2_OPTION_B_DEEP_SCAN_PORTABLE.zip
             desktop/autoguard_scan_dios_v6_2/output/SHA256.txt
             desktop/autoguard_scan_dios_v6_2/output/NOTAS_DE_INSTALACION.txt
             desktop/autoguard_scan_dios_v6_2/output/MANIFIESTO.txt
