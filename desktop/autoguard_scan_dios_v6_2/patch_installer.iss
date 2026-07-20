@@ -51,7 +51,7 @@ Filename: "{app}\{#AppExeName}"; Description: "Abrir AUTOGUARD SCAN DIOS actuali
 
 [Code]
 const
-  InstalledAppId = '{{E2D8233D-7A10-4C4D-BCA0-62B062202026}_is1';
+  InstalledAppId = '{E2D8233D-7A10-4C4D-BCA0-62B062202026}_is1';
 
 var
   CachedInstallDir: string;
@@ -170,8 +170,4 @@ begin
     WizardForm.StatusLabel.Caption := 'Aplicando parche de Informe Maestro Premium...';
     WizardForm.FilenameLabel.Caption := 'Respaldando instalación y actualizando gráficos HD, descripciones y procedimientos';
   end;
-end;
-
-procedure CurStepChanged2(CurStep: TSetupStep);
-begin
 end;
