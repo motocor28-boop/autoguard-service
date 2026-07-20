@@ -4,13 +4,6 @@ on:
   push:
     branches:
       - main
-      - autoguard-scan-dios-v6-2-rebuild
-    paths:
-      - "desktop/autoguard_scan_dios_v6_2/**"
-      - ".github/workflows/build-autoguard-scan.yml"
-  pull_request:
-    branches:
-      - main
     paths:
       - "desktop/autoguard_scan_dios_v6_2/**"
       - ".github/workflows/build-autoguard-scan.yml"
@@ -39,7 +32,9 @@ jobs:
           cache-dependency-path: desktop/autoguard_scan_dios_v6_2/requirements.txt
 
       - name: Instalar dependencias
-        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
 
       - name: Generar base DTC offline
         run: python build_dtc_db.py
@@ -47,8 +42,11 @@ jobs:
       - name: Generar icono
         run: python make_icon.py
 
+      - name: Preparar fuente para Windows
+        run: python prepare_build.py
+
       - name: Validar sintaxis
-        run: python -m compileall -q app.py core.py dtc_database.py reporting.py build_dtc_db.py make_icon.py
+        run: python -m compileall -q app.py core.py dtc_database.py reporting.py build_dtc_db.py make_icon.py prepare_build.py
 
       - name: Ejecutar pruebas automáticas
         run: python -m pytest -q
