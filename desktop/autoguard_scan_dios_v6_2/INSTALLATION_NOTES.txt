@@ -1,24 +1,38 @@
-AUTOGUARD SCAN DIOS v6.2 PREMIUM
+AUTOGUARD SCAN DIOS v6.2 — OPCIÓN B DEEP SCAN
 
 Autor: Esteban Cortez Richards
-Edición: Interfaz profesional grafito y naranja
+Edición visual: Opción B profesional grafito y naranja
 
 INSTALACIÓN
 - La aplicación se instala en la carpeta local del usuario:
   %LOCALAPPDATA%\Autoguard\Fusion Scanner DIOS v6.2
 - No requiere licencias, activación, bloqueo ni conexión a Internet para funcionar.
 - Incluye acceso directo opcional, menú Inicio y desinstalador de Windows.
-- Al finalizar se abre directamente el panel principal Premium.
+- Al finalizar se abre directamente el panel principal Opción B.
 - No utiliza pantalla de presentación bloqueante.
 
-FUNCIONES PRINCIPALES
+ESCANEO PROFUNDO DE SOLO LECTURA
+- Identifica adaptador, protocolo y voltaje informado por el ELM327.
+- Lee MIL, cantidad de DTC y monitores de preparación mediante PID 0101.
+- Consulta dinámicamente los bloques PID publicados desde 0100 hasta 01E0.
+- Interroga y conserva en bruto todos los PID anunciados por la ECU, incluso cuando todavía no existe una fórmula universal para traducirlos.
+- Decodifica los sensores OBD-II estándar implementados: RPM, velocidad, ECT, IAT, MAF, MAP, carga, trims, presiones, nivel de combustible, voltaje, EGR, EVAP, temperaturas, torque y otros compatibles.
+- Recupera freeze frame Mode 02 para todos los PID anunciados que respondan.
+- Lee DTC confirmados, pendientes y permanentes mediante modos 03, 07 y 0A.
+- Captura datos de pruebas de monitores Mode 05 y Mode 06.
+- Descubre información Mode 09: VIN, ID de calibración, CVN, nombre ECU, contadores y todos los PID de información publicados.
+- Detecta módulos que responden por CAN OBD-II con encabezados visibles.
+- Realiza sondeo UDS de solo lectura en direcciones comunes y detectadas:
+  - DID F190: VIN.
+  - DID F18C: número de serie ECU.
+  - DID F189: identificación de software.
+  - Servicio 19 02 FF: DTC UDS y estado cuando el módulo lo permite.
+- Permite exportar un expediente JSON con resultados interpretados y respuestas crudas.
+- No borra DTC, no activa actuadores, no codifica módulos, no modifica adaptativos y no programa ECU.
+
+OTRAS FUNCIONES
 - Conexión ELM327 mediante WiFi, puertos COM y simulador.
-- Inicialización y detección automática del protocolo OBD-II.
-- Consulta de bloques PID 0100, 0120, 0140 y 0160.
-- Lectura de todos los sensores estándar implementados y anunciados por la ECU.
-- Incluye RPM, velocidad, refrigerante, MAF, MAP, carga, trims, presión y nivel de combustible, voltaje, temperaturas, EGR, EVAP, torque y otros PID compatibles.
 - Flujómetro mediante PID 015E; cuando no existe, cálculo alternativo desde MAF claramente marcado como estimado.
-- Lectura de DTC confirmados, pendientes y permanentes.
 - Base SQLite offline ampliada de códigos P, B, C y U.
 - Base offline de soluciones con sistema, severidad, síntomas, causas, herramientas, sensores relacionados, proceso paso a paso y validación posterior.
 - Osciloscopio de telemetría OBD-II con exportación CSV.
@@ -27,8 +41,10 @@ FUNCIONES PRINCIPALES
 - Página independiente de información y planificación.
 - Logo e iconos de alta resolución.
 
-USO RESPONSABLE
+ALCANCE TÉCNICO REAL
+- No existe un comando universal capaz de leer absolutamente todos los parámetros propietarios de todas las marcas y módulos.
+- Un ELM327 normalmente accede a la red de diagnóstico principal y puede quedar limitado por velocidad, memoria, tamaño de trama, CAN-FD, DoIP, redes secundarias y mecanismos de seguridad OEM.
+- Los datos propietarios completos, codificación, funciones bidireccionales y programación pueden requerir hardware J2534, DoIP, CAN-FD, interfaces OEM, archivos DBC/ODX y acceso autorizado del fabricante.
 - Un DTC indica una condición detectada; no confirma por sí solo un componente defectuoso.
 - Antes de reemplazar piezas, verifique alimentación, masa, conectores, cableado, parámetros, condiciones mecánicas y documentación OEM.
-- Las funciones OEM y bidireccionales dependen del vehículo, del adaptador y del protocolo compatible.
-- ELM327 entrega telemetría calculada por la ECU. La forma de onda eléctrica directa de CKP, CMP, inyectores, bobinas, CAN o PWM requiere un osciloscopio físico, sondas adecuadas y procedimientos seguros.
+- La forma de onda eléctrica directa de CKP, CMP, inyectores, bobinas, CAN o PWM requiere un osciloscopio físico, sondas adecuadas y procedimientos seguros.
