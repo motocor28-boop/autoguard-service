@@ -59,10 +59,12 @@ def main() -> int:
     if "--self-test" in sys.argv:
         return runtime_self_test()
 
+    from superscan.hd_graphs import install_hd_graphs
     from superscan.professional_features import install_professional_features
     from superscan.ui import SuperScanApp
 
     install_professional_features(SuperScanApp)
+    install_hd_graphs(SuperScanApp)
     logger = configure_logging()
     install_exception_hook(logger)
     app = SuperScanApp(logger)
