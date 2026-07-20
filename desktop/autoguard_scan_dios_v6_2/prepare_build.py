@@ -108,19 +108,24 @@ def main() -> None:
     require_markers(
         ROOT / "reporting.py",
         (
-            "SUBINFORME TÉCNICO DE PROCEDIMIENTOS",
-            "PROCEDIMIENTO PASO A PASO",
-            "Registro técnico",
-            "Folio",
-            "version` se mantiene por compatibilidad",
+            "INFORME TÉCNICO DE DIAGNÓSTICO Y",
+            "GRÁFICO VECTORIAL HD",
+            "DIAGNÓSTICO Y REPARACIÓN DEL CÓDIGO",
+            "PLAN DE TRABAJO RECOMENDADO",
+            "CHECKLIST DE ENTREGA",
+            "CONCLUSIÓN TÉCNICA",
+            "RECOMENDACIÓN FINAL",
+            "version` se conserva únicamente por compatibilidad",
+            "_review_suggestions",
         ),
-        "Informe y subinformes técnicos",
+        "Informe maestro y procedimientos técnicos",
     )
     require_absent(
         ROOT / "reporting.py",
         (
             '["Fecha y hora", now.strftime("%d-%m-%Y %H:%M"), "Versión", version]',
             'f"AUTOGUARD SCAN DIOS v{version}',
+            '["VERSIÓN", version]',
         ),
         "Eliminación de versión visible en PDF",
     )
@@ -129,7 +134,7 @@ def main() -> None:
         ("AUTO GUARD", "SERVICE", "TU VEHÍCULO, NUESTRA PRIORIDAD", "autoguard.ico"),
         "Branding oficial",
     )
-    print("Fuente NIVEL DIOS PREMIUM con informe principal y subinformes preparada para Windows")
+    print("Fuente NIVEL DIOS PREMIUM con Informe Maestro preparada para Windows")
 
 
 if __name__ == "__main__":
