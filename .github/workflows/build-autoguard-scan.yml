@@ -3,6 +3,7 @@ name: Build AUTOGUARD SCAN DIOS v6.2
 on:
   push:
     branches:
+      - main
       - autoguard-scan-dios-v6-2-rebuild
     paths:
       - "desktop/autoguard_scan_dios_v6_2/**"
