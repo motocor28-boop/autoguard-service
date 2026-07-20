@@ -1,2 +1,3 @@
 Compilar y validar SuperScan 2.0 Profesional con interfaz oscura, 12.133 soluciones offline, gráficos HD e informe multipágina.
 Segundo ciclo: publicar detalle exacto de cualquier fallo de prueba.
+Tercer ciclo: corregir compatibilidad de colores en gráficos del informe.
