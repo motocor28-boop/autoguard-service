@@ -30,7 +30,8 @@ def selftest() -> int:
     assert numpy.__version__
     assert matplotlib.__version__
     assert reportlab.Version
-    print("SUPERSCAN_PROFESSIONAL_SELFTEST_OK")
+    # El ejecutable es de tipo GUI y no dispone de stdout. El código 0 confirma
+    # la autoprueba sin intentar escribir en una consola inexistente.
     return 0
 
 
