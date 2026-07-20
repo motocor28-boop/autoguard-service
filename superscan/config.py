@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 import os
 
-APP_NAME = "SuperScan 2.0 Final Mejorado"
-APP_VERSION = "2.0.0"
+APP_NAME = "SuperScan 2.0 Profesional"
+APP_VERSION = "2.1.0"
 APP_PUBLISHER = "AutoGuard Servicios"
 AUTHOR = "Esteban Cortez"
 
