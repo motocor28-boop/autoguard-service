@@ -3,36 +3,40 @@ from __future__ import annotations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-APP = ROOT / "app.py"
-
-
-def replace_once(text: str, old: str, new: str, label: str) -> str:
-    count = text.count(old)
-    if count == 0:
-        # Permite builds repetidos cuando el parche ya fue aplicado.
-        if new in text:
-            print(f"{label}: ya aplicado")
-            return text
-        raise RuntimeError(f"No se encontró el bloque requerido: {label}")
-    if count != 1:
-        raise RuntimeError(f"El bloque {label} aparece {count} veces")
-    print(f"{label}: aplicado")
-    return text.replace(old, new, 1)
 
 
 def main() -> None:
-    text = APP.read_text(encoding="utf-8")
-
-    old_connect = '''    def _connect(self) -> None:\n        self.connect_button.configure(state="disabled")\n        self._set_status("Conectando...")\n\n        def task() -> None:\n            try:\n                protocol = self.client.connect(self._connection_config())\n'''
-    new_connect = '''    def _connect(self) -> None:\n        try:\n            config = self._connection_config()\n        except Exception as exc:\n            messagebox.showerror("Configuración de conexión", str(exc))\n            return\n        self.connect_button.configure(state="disabled")\n        self._set_status("Conectando...")\n\n        def task() -> None:\n            try:\n                protocol = self.client.connect(config)\n'''
-    text = replace_once(text, old_connect, new_connect, "configuración segura de conexión")
-
-    old_report = '''        output = Path(filedialog.asksaveasfilename(\n            title="Guardar informe AUTOGUARD",\n            defaultextension=".pdf",\n            filetypes=[("Documento PDF", "*.pdf")],\n            initialfile=default_report_path().name,\n            initialdir=str(default_report_path().parent),\n        ))\n        if not str(output):\n            return\n'''
-    new_report = '''        raw_output = filedialog.asksaveasfilename(\n            title="Guardar informe AUTOGUARD",\n            defaultextension=".pdf",\n            filetypes=[("Documento PDF", "*.pdf")],\n            initialfile=default_report_path().name,\n            initialdir=str(default_report_path().parent),\n        )\n        if not raw_output:\n            return\n        output = Path(raw_output)\n'''
-    text = replace_once(text, old_report, new_report, "cancelación segura del informe PDF")
-
-    APP.write_text(text, encoding="utf-8", newline="\n")
-    print("Fuente preparada para compilación")
+    required = [
+        ROOT / "app.py", ROOT / "option_b_app.py", ROOT / "premium_app.py",
+        ROOT / "deep_scan.py", ROOT / "deep_scan_full.py", ROOT / "core.py",
+        ROOT / "dtc_database.py", ROOT / "reporting.py",
+        ROOT / "data" / "autoguard_dtc.sqlite",
+        ROOT / "autoguard.ico", ROOT / "autoguard.png",
+    ]
+    missing = [str(path.name) for path in required if not path.is_file()]
+    if missing:
+        raise RuntimeError(f"Faltan archivos para compilar: {', '.join(missing)}")
+    app_text = (ROOT / "app.py").read_text(encoding="utf-8")
+    premium_text = (ROOT / "premium_app.py").read_text(encoding="utf-8")
+    option_b_text = (ROOT / "option_b_app.py").read_text(encoding="utf-8")
+    deep_text = (ROOT / "deep_scan.py").read_text(encoding="utf-8")
+    full_text = (ROOT / "deep_scan_full.py").read_text(encoding="utf-8")
+    for marker in ("import option_b_app", "DeepScannerFull", "option_b_app.DeepScanner"):
+        if marker not in app_text:
+            raise RuntimeError(f"app.py no activa la cobertura máxima: {marker}")
+    for marker in ("APP_AUTHOR = \"Esteban Cortez Richards\"", "ORANGE = \"#FF7A00\"", "Informe PDF Premium"):
+        if marker not in premium_text:
+            raise RuntimeError(f"No se encontró marcador Premium: {marker}")
+    for marker in ("Escaneo profundo de sistema", "Exportar expediente JSON", "OptionBDeepScanApp"):
+        if marker not in option_b_text:
+            raise RuntimeError(f"No se encontró marcador de interfaz B: {marker}")
+    for marker in ("class DeepScanner", "22F190", "1902FF", "MODE06"):
+        if marker not in deep_text:
+            raise RuntimeError(f"No se encontró función de escaneo profundo: {marker}")
+    for marker in ("class DeepScannerFull", "PID_RAW_", "MODE09_RAW_", "FREEZE_RAW_"):
+        if marker not in full_text:
+            raise RuntimeError(f"No se encontró cobertura máxima de ECU: {marker}")
+    print("Fuente Opción B con cobertura máxima de lectura preparada para compilación Windows")
 
 
 if __name__ == "__main__":
