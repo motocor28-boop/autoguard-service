@@ -3,36 +3,74 @@ from __future__ import annotations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-APP = ROOT / "app.py"
 
 
-def replace_once(text: str, old: str, new: str, label: str) -> str:
-    count = text.count(old)
-    if count == 0:
-        # Permite builds repetidos cuando el parche ya fue aplicado.
-        if new in text:
-            print(f"{label}: ya aplicado")
-            return text
-        raise RuntimeError(f"No se encontró el bloque requerido: {label}")
-    if count != 1:
-        raise RuntimeError(f"El bloque {label} aparece {count} veces")
-    print(f"{label}: aplicado")
-    return text.replace(old, new, 1)
+def require_markers(path: Path, markers: tuple[str, ...], label: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    for marker in markers:
+        if marker not in text:
+            raise RuntimeError(f"{label}: falta marcador {marker}")
 
 
 def main() -> None:
-    text = APP.read_text(encoding="utf-8")
+    required = [
+        ROOT / "app.py",
+        ROOT / "final_launcher.py",
+        ROOT / "final_dios_app.py",
+        ROOT / "final_widgets.py",
+        ROOT / "option_b_app.py",
+        ROOT / "premium_app.py",
+        ROOT / "deep_scan.py",
+        ROOT / "deep_scan_full.py",
+        ROOT / "diagnostic_parsers.py",
+        ROOT / "core.py",
+        ROOT / "dtc_database.py",
+        ROOT / "reporting.py",
+        ROOT / "data" / "autoguard_dtc.sqlite",
+        ROOT / "autoguard.ico",
+        ROOT / "autoguard.png",
+    ]
+    missing = [path.name for path in required if not path.is_file()]
+    if missing:
+        raise RuntimeError(f"Faltan archivos para compilar: {', '.join(missing)}")
 
-    old_connect = '''    def _connect(self) -> None:\n        self.connect_button.configure(state="disabled")\n        self._set_status("Conectando...")\n\n        def task() -> None:\n            try:\n                protocol = self.client.connect(self._connection_config())\n'''
-    new_connect = '''    def _connect(self) -> None:\n        try:\n            config = self._connection_config()\n        except Exception as exc:\n            messagebox.showerror("Configuración de conexión", str(exc))\n            return\n        self.connect_button.configure(state="disabled")\n        self._set_status("Conectando...")\n\n        def task() -> None:\n            try:\n                protocol = self.client.connect(config)\n'''
-    text = replace_once(text, old_connect, new_connect, "configuración segura de conexión")
-
-    old_report = '''        output = Path(filedialog.asksaveasfilename(\n            title="Guardar informe AUTOGUARD",\n            defaultextension=".pdf",\n            filetypes=[("Documento PDF", "*.pdf")],\n            initialfile=default_report_path().name,\n            initialdir=str(default_report_path().parent),\n        ))\n        if not str(output):\n            return\n'''
-    new_report = '''        raw_output = filedialog.asksaveasfilename(\n            title="Guardar informe AUTOGUARD",\n            defaultextension=".pdf",\n            filetypes=[("Documento PDF", "*.pdf")],\n            initialfile=default_report_path().name,\n            initialdir=str(default_report_path().parent),\n        )\n        if not raw_output:\n            return\n        output = Path(raw_output)\n'''
-    text = replace_once(text, old_report, new_report, "cancelación segura del informe PDF")
-
-    APP.write_text(text, encoding="utf-8", newline="\n")
-    print("Fuente preparada para compilación")
+    require_markers(ROOT / "app.py", ("from final_launcher import main", "diagnostic_parsers"), "Arranque final")
+    require_markers(
+        ROOT / "final_dios_app.py",
+        (
+            "6.2.0 FINAL DIOS HD",
+            "SENSOR_SYSTEMS",
+            "Escaneo profundo",
+            "DTC y soluciones",
+            "Información del vehículo",
+            "Informe Premium",
+            "SensorDetailWindow",
+            "MultiTraceCanvas",
+            "Exportar gráfica",
+        ),
+        "Interfaz final",
+    )
+    require_markers(
+        ROOT / "final_widgets.py",
+        ("enable_windows_dpi_awareness", "class MultiTraceCanvas", "class SensorDetailWindow"),
+        "Widgets HD",
+    )
+    require_markers(
+        ROOT / "deep_scan.py",
+        ("class DeepScanner", "22F190", "1902FF", "MODE06"),
+        "Escaneo profundo",
+    )
+    require_markers(
+        ROOT / "deep_scan_full.py",
+        ("class DeepScannerFull", "PID_RAW_", "MODE09_RAW_", "FREEZE_RAW_"),
+        "Cobertura máxima",
+    )
+    require_markers(
+        ROOT / "premium_app.py",
+        ('APP_AUTHOR = "Esteban Cortez Richards"', 'ORANGE = "#FF7A00"', "Informe PDF Premium"),
+        "Base Premium",
+    )
+    print("Fuente FINAL DIOS HD preparada para compilación Windows")
 
 
 if __name__ == "__main__":
