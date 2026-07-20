@@ -11,8 +11,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
 
 jobs:
   build-windows:
@@ -33,57 +31,30 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install -r requirements.txt
 
       - name: Validar sintaxis
         shell: pwsh
         run: python -m compileall -q main.py superscan tests
 
       - name: Probar catálogo DTC 12133
-        id: catalog
-        continue-on-error: true
         shell: pwsh
-        run: |
-          pytest -vv tests/test_core.py::test_dtc_catalog_has_exact_record_count 2>&1 | Tee-Object -FilePath catalog_test.log
-          exit $LASTEXITCODE
-
-      - name: Publicar diagnóstico del catálogo
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: SuperScan-catalog-test-log
-          path: catalog_test.log
-          if-no-files-found: warn
-          retention-days: 2
-
-      - name: Informar detalle del fallo en PR
-        if: steps.catalog.outcome == 'failure' && github.event_name == 'pull_request'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $body = Get-Content catalog_test.log -Raw
-          gh pr comment 4 --body $body
-
-      - name: Detener si falla el catálogo
-        if: steps.catalog.outcome == 'failure'
-        shell: pwsh
-        run: throw "Falló la validación del catálogo DTC; revise el comentario automático."
+        run: python -m pytest -q tests/test_core.py::test_dtc_catalog_has_exact_record_count
 
       - name: Probar decodificación OBD-II
         shell: pwsh
         run: |
-          pytest -q tests/test_core.py::test_dtc_parsing
-          pytest -q tests/test_core.py::test_supported_pid_blocks_and_vin
-          pytest -q tests/test_core.py::test_fuel_pid_formulas
+          python -m pytest -q tests/test_core.py::test_dtc_parsing
+          python -m pytest -q tests/test_core.py::test_supported_pid_blocks_and_vin
+          python -m pytest -q tests/test_core.py::test_fuel_pid_formulas
 
       - name: Probar simulador completo
         shell: pwsh
-        run: pytest -q tests/test_core.py::test_simulator_full_session
+        run: python -m pytest -q tests/test_core.py::test_simulator_full_session
 
       - name: Compilar aplicación gráfica
         shell: pwsh
-        run: pyinstaller --noconfirm --clean superscan.spec
+        run: python -m PyInstaller --noconfirm --clean superscan.spec
 
       - name: Verificar ejecutable compilado
         shell: pwsh
