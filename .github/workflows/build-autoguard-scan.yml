@@ -1,0 +1,120 @@
+name: Build AUTOGUARD SCAN DIOS v6.2
+
+on:
+  push:
+    branches:
+      - autoguard-scan-dios-v6-2-rebuild
+    paths:
+      - "desktop/autoguard_scan_dios_v6_2/**"
+      - ".github/workflows/build-autoguard-scan.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: desktop/autoguard_scan_dios_v6_2
+
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: desktop/autoguard_scan_dios_v6_2/requirements.txt
+
+      - name: Instalar dependencias
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
+      - name: Generar base DTC offline
+        run: python build_dtc_db.py
+
+      - name: Generar icono
+        run: python make_icon.py
+
+      - name: Validar sintaxis
+        run: python -m compileall -q app.py core.py dtc_database.py reporting.py build_dtc_db.py make_icon.py
+
+      - name: Ejecutar pruebas automáticas
+        run: python -m pytest -q
+
+      - name: Compilar aplicación onedir
+        run: pyinstaller --clean --noconfirm autoguard_scan.spec
+
+      - name: Validar archivos de la compilación
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $exe = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\AUTOGUARD_SCAN_DIOS_v6.2.exe"
+          $db = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\_internal\data\autoguard_dtc.sqlite"
+          if (!(Test-Path $exe)) { throw "No se generó el ejecutable principal" }
+          if (!(Test-Path $db)) {
+            $db = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\data\autoguard_dtc.sqlite"
+          }
+          if (!(Test-Path $db)) { throw "No se incorporó la base DTC" }
+          Write-Host "Ejecutable: $exe"
+          Write-Host "Base DTC: $db"
+
+      - name: Prueba de apertura del panel principal
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $exe = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\AUTOGUARD_SCAN_DIOS_v6.2.exe"
+          $process = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -PassThru
+          Start-Sleep -Seconds 10
+          if ($process.HasExited) {
+            throw "La aplicación se cerró durante la prueba de inicio. Código: $($process.ExitCode)"
+          }
+          Stop-Process -Id $process.Id -Force
+          Write-Host "El panel principal permaneció activo durante la prueba."
+
+      - name: Instalar Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Compilar instalador
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) { throw "No se encontró Inno Setup 6" }
+          & $iscc "installer.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup terminó con error $LASTEXITCODE" }
+
+      - name: Crear paquete portátil y hashes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force -Path "output" | Out-Null
+          $portable = "output\AUTOGUARD_SCAN_DIOS_v6.2_PORTABLE.zip"
+          if (Test-Path $portable) { Remove-Item $portable -Force }
+          Compress-Archive -Path "dist\AUTOGUARD_SCAN_DIOS_v6.2\*" -DestinationPath $portable -CompressionLevel Optimal
+          $setup = "output\AUTOGUARD_SCAN_DIOS_v6.2_Setup.exe"
+          if (!(Test-Path $setup)) { throw "No se generó el Setup.exe" }
+          $setupHash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          $portableHash = (Get-FileHash $portable -Algorithm SHA256).Hash.ToLower()
+          @(
+            "$setupHash  AUTOGUARD_SCAN_DIOS_v6.2_Setup.exe",
+            "$portableHash  AUTOGUARD_SCAN_DIOS_v6.2_PORTABLE.zip"
+          ) | Set-Content -Path "output\SHA256.txt" -Encoding ascii
+          Copy-Item "INSTALLATION_NOTES.txt" "output\NOTAS_DE_INSTALACION.txt" -Force
+
+      - name: Publicar instalador y portable
+        uses: actions/upload-artifact@v4
+        with:
+          name: AUTOGUARD_SCAN_DIOS_v6.2_WINDOWS
+          path: |
+            desktop/autoguard_scan_dios_v6_2/output/AUTOGUARD_SCAN_DIOS_v6.2_Setup.exe
+            desktop/autoguard_scan_dios_v6_2/output/AUTOGUARD_SCAN_DIOS_v6.2_PORTABLE.zip
+            desktop/autoguard_scan_dios_v6_2/output/SHA256.txt
+            desktop/autoguard_scan_dios_v6_2/output/NOTAS_DE_INSTALACION.txt
+          if-no-files-found: error
+          retention-days: 30
