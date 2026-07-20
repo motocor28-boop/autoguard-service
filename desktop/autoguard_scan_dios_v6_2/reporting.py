@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Mapping
@@ -40,6 +41,28 @@ def _paragraph(text: object, style) -> Paragraph:
     return Paragraph(_safe(text).replace("\n", "<br/>"), style)
 
 
+def _split_steps(value: object) -> list[str]:
+    """Normaliza procedimientos de la base offline en pasos imprimibles."""
+    text = str(value or "").replace("\r", "\n").strip()
+    if not text:
+        return ["Confirmar el procedimiento específico con la documentación OEM del vehículo."]
+
+    raw_lines = [line.strip() for line in text.split("\n") if line.strip()]
+    if len(raw_lines) <= 1:
+        raw_lines = [
+            part.strip()
+            for part in re.split(r"(?=(?:\d{1,2}[\.)]|[-•])\s+)", text)
+            if part.strip()
+        ]
+
+    cleaned: list[str] = []
+    for line in raw_lines:
+        line = re.sub(r"^(?:\d{1,2}[\.)]|[-•])\s*", "", line).strip()
+        if line and line not in cleaned:
+            cleaned.append(line)
+    return cleaned or [text]
+
+
 def default_report_path() -> Path:
     documents = Path.home() / "Documents" / "AUTOGUARD" / "Informes"
     documents.mkdir(parents=True, exist_ok=True)
@@ -56,7 +79,12 @@ def _severity_color(severity: str):
     return GREEN
 
 
-def _chart(title: str, samples: list[tuple[float, float]], width: float = 174 * mm, height: float = 66 * mm) -> Drawing:
+def _chart(
+    title: str,
+    samples: list[tuple[float, float]],
+    width: float = 174 * mm,
+    height: float = 66 * mm,
+) -> Drawing:
     drawing = Drawing(width, height)
     if not samples:
         drawing.add(String(10, height / 2, "Sin muestras", fontName="Helvetica", fontSize=9, fillColor=MID))
@@ -100,6 +128,32 @@ def _chart(title: str, samples: list[tuple[float, float]], width: float = 174 * 
     return drawing
 
 
+def _procedure_table(item: Mapping[str, object], styles) -> Table:
+    steps = _split_steps(item.get("steps"))
+    rows: list[list[object]] = [["Paso", "Procedimiento de revisión / solución", "Registro técnico"]]
+    for index, step in enumerate(steps, start=1):
+        rows.append([
+            str(index),
+            Paragraph(step, styles["AGStep"]),
+            Paragraph("[  ] Conforme<br/>[  ] No conforme<br/><br/>Hallazgo: ____________________", styles["AGChecklist"]),
+        ])
+    table = Table(rows, colWidths=[14 * mm, 112 * mm, 48 * mm], repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), DARK),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (0, 0), (0, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#AAB1BC")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT]),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    return table
+
+
 def generate_pdf_report(
     output: Path,
     vehicle: Mapping[str, object],
@@ -111,6 +165,11 @@ def generate_pdf_report(
     author: str = "Esteban Cortez Richards",
     version: str = "6.2 PREMIUM",
 ) -> Path:
+    """Genera informe principal y subinforme de procedimientos.
+
+    `version` se mantiene por compatibilidad con llamadas anteriores, pero no se
+    imprime en ninguna parte del documento.
+    """
     output.parent.mkdir(parents=True, exist_ok=True)
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(
@@ -142,6 +201,22 @@ def generate_pdf_report(
         fontSize=8, leading=10.5, textColor=RED, borderColor=RED, borderWidth=0.6,
         borderPadding=5, backColor=colors.HexColor("#FFF0F0"),
     ))
+    styles.add(ParagraphStyle(
+        name="AGSubreportTitle", parent=styles["Title"], fontName="Helvetica-Bold",
+        fontSize=18, leading=22, alignment=TA_CENTER, textColor=BRAND, spaceAfter=3 * mm,
+    ))
+    styles.add(ParagraphStyle(
+        name="AGSubreportSubtitle", parent=styles["Heading2"], fontName="Helvetica-Bold",
+        fontSize=10, leading=13, alignment=TA_CENTER, textColor=DARK, spaceAfter=6 * mm,
+    ))
+    styles.add(ParagraphStyle(
+        name="AGStep", parent=styles["BodyText"], fontName="Helvetica",
+        fontSize=8, leading=10.5, textColor=DARK,
+    ))
+    styles.add(ParagraphStyle(
+        name="AGChecklist", parent=styles["BodyText"], fontName="Helvetica",
+        fontSize=7, leading=9, textColor=MID,
+    ))
 
     def footer(canvas, document) -> None:
         canvas.saveState()
@@ -150,7 +225,7 @@ def generate_pdf_report(
         canvas.line(18 * mm, 14 * mm, 192 * mm, 14 * mm)
         canvas.setFont("Helvetica", 7.5)
         canvas.setFillColor(MID)
-        canvas.drawString(18 * mm, 9 * mm, f"AUTOGUARD SCAN DIOS v{version} · Técnico: {author}")
+        canvas.drawString(18 * mm, 9 * mm, f"AUTOGUARD SCAN DIOS · Técnico: {author}")
         canvas.drawRightString(192 * mm, 9 * mm, f"Página {document.page}")
         canvas.restoreState()
 
@@ -158,9 +233,10 @@ def generate_pdf_report(
         str(output), pagesize=A4, rightMargin=18 * mm, leftMargin=18 * mm,
         topMargin=15 * mm, bottomMargin=20 * mm,
         title="Informe Premium AUTOGUARD SCAN DIOS", author=author,
-        subject="Diagnóstico OBD-II con gráficos y plan de acción",
+        subject="Diagnóstico OBD-II con gráficos y subinforme de procedimientos",
     )
     now = datetime.now()
+    report_id = now.strftime("AG-%Y%m%d-%H%M%S")
     dtc_list = list(dtcs)
     history_data = {name: list(samples) for name, samples in (history or {}).items()}
     unique_codes = sorted({str(item.get("code", "")) for item in dtc_list if item.get("code")})
@@ -171,21 +247,26 @@ def generate_pdf_report(
     ]
 
     header_rows = [
-        ["Fecha y hora", now.strftime("%d-%m-%Y %H:%M"), "Versión", version],
+        ["Fecha y hora", now.strftime("%d-%m-%Y %H:%M"), "Folio", report_id],
         ["Cliente", _safe(vehicle.get("cliente")), "Patente", _safe(vehicle.get("patente"))],
         ["Marca", _safe(vehicle.get("marca")), "Modelo / Año", f"{_safe(vehicle.get('modelo'))} / {_safe(vehicle.get('anio'))}"],
         ["VIN", _safe(vehicle.get("vin")), "Kilometraje", _safe(vehicle.get("kilometraje"))],
         ["Motor", _safe(vehicle.get("motor")), "Protocolo", _safe(protocol)],
-        ["Técnico", _safe(vehicle.get("tecnico") or author), "Autor aplicación", "Esteban Cortez Richards"],
+        ["Técnico", _safe(vehicle.get("tecnico") or author), "Tipo de informe", "Diagnóstico técnico"],
     ]
     header = Table(header_rows, colWidths=[28 * mm, 57 * mm, 30 * mm, 59 * mm])
     header.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), LIGHT), ("TEXTCOLOR", (0, 0), (-1, -1), DARK),
+        ("BACKGROUND", (0, 0), (-1, -1), LIGHT),
+        ("TEXTCOLOR", (0, 0), (-1, -1), DARK),
         ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"), ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8), ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#B8C0CC")),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#B8C0CC")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
     story.extend([header, Paragraph("RESUMEN EJECUTIVO", styles["AGSection"])])
@@ -193,14 +274,18 @@ def generate_pdf_report(
     summary_rows = [
         ["Comunicación ECU", _safe(protocol), "DTC únicos", str(len(unique_codes))],
         ["Sensores registrados", str(len(live_values)), "Gráficos incluidos", str(len(history_data))],
-        ["Estado diagnóstico", "Requiere confirmación técnica", "Prioridad", "Según severidad de cada DTC"],
+        ["Estado diagnóstico", "Requiere confirmación técnica", "Subinformes", str(len(unique_codes))],
     ]
     summary = Table(summary_rows, colWidths=[34 * mm, 54 * mm, 36 * mm, 50 * mm])
     summary.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.white), ("GRID", (0, 0), (-1, -1), 0.4, MID),
-        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"), ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8), ("TEXTCOLOR", (0, 0), (-1, -1), DARK),
-        ("LEFTPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.4, MID),
+        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("TEXTCOLOR", (0, 0), (-1, -1), DARK),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
     story.append(summary)
@@ -210,33 +295,48 @@ def generate_pdf_report(
         rows = [["Código", "Estado", "Severidad", "Sistema", "Descripción", "Fabricante"]]
         for item in dtc_list:
             rows.append([
-                _safe(item.get("code")), _safe(item.get("status")), _safe(item.get("severity", "Por confirmar")),
+                _safe(item.get("code")),
+                _safe(item.get("status")),
+                _safe(item.get("severity", "Por confirmar")),
                 _paragraph(item.get("system", "No identificado"), styles["AGSmall"]),
-                _paragraph(item.get("description"), styles["AGSmall"]), _safe(item.get("manufacturer")),
+                _paragraph(item.get("description"), styles["AGSmall"]),
+                _safe(item.get("manufacturer")),
             ])
         table = Table(rows, colWidths=[16 * mm, 19 * mm, 20 * mm, 29 * mm, 61 * mm, 29 * mm], repeatRows=1)
         table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), DARK), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTSIZE", (0, 0), (-1, -1), 7),
+            ("BACKGROUND", (0, 0), (-1, 0), DARK),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 7),
             ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#AAB1BC")),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT]),
-            ("LEFTPADDING", (0, 0), (-1, -1), 2.5), ("RIGHTPADDING", (0, 0), (-1, -1), 2.5),
-            ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT]),
+            ("LEFTPADDING", (0, 0), (-1, -1), 2.5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 2.5),
+            ("TOPPADDING", (0, 0), (-1, -1), 3),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
         ]))
         story.append(table)
+        story.append(Paragraph(
+            "Los procedimientos completos de revisión y solución se incluyen como subinformes técnicos al final del documento.",
+            styles["AGBody"],
+        ))
     else:
-        story.append(Paragraph("No se registraron códigos DTC durante la sesión.", styles["AGBody"]))
+        story.append(Paragraph("SIN CÓDIGOS ACTIVOS. La ECU no informó DTC para desarrollar subinformes de procedimiento.", styles["AGBody"]))
 
     story.append(Paragraph("DATOS EN VIVO — ÚLTIMA MUESTRA", styles["AGSection"]))
     if live_values:
         live_rows = [["Parámetro", "Valor"]] + [[_safe(key), _safe(value)] for key, value in live_values.items()]
         live_table = Table(live_rows, colWidths=[100 * mm, 74 * mm], repeatRows=1)
         live_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), BRAND), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("BACKGROUND", (0, 0), (-1, 0), BRAND),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 8),
             ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#AAB1BC")),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT]),
-            ("LEFTPADDING", (0, 0), (-1, -1), 4), ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
         ]))
         story.append(live_table)
     else:
@@ -250,40 +350,6 @@ def generate_pdf_report(
         ))
         for name, samples in history_data.items():
             story.extend([Spacer(1, 3 * mm), _chart(name, samples), Spacer(1, 2 * mm)])
-
-    if dtc_list:
-        story.extend([PageBreak(), Paragraph("PLAN DE ACCIÓN POR CÓDIGO", styles["AGSection"])])
-        processed: set[tuple[str, str]] = set()
-        for item in dtc_list:
-            key = (_safe(item.get("code")), _safe(item.get("manufacturer")))
-            if key in processed:
-                continue
-            processed.add(key)
-            severity = _safe(item.get("severity", "Por confirmar"))
-            heading = Table([
-                [Paragraph(f"{key[0]} · {_safe(item.get('description'))}", styles["AGCode"]), severity]
-            ], colWidths=[145 * mm, 29 * mm])
-            heading.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, -1), LIGHT), ("BOX", (0, 0), (-1, -1), 0.8, BRAND),
-                ("TEXTCOLOR", (1, 0), (1, 0), _severity_color(severity)),
-                ("FONTNAME", (1, 0), (1, 0), "Helvetica-Bold"), ("FONTSIZE", (1, 0), (1, 0), 8),
-                ("ALIGN", (1, 0), (1, 0), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 5), ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-                ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-            ]))
-            blocks = [
-                heading,
-                Paragraph(f"<b>Sistema:</b> {_safe(item.get('system'))} · <b>Fabricante:</b> {key[1]} · <b>Estado:</b> {_safe(item.get('status'))}", styles["AGBody"]),
-                Paragraph("Síntomas probables", styles["AGSection"]), _paragraph(item.get("symptoms"), styles["AGBody"]),
-                Paragraph("Causas probables", styles["AGSection"]), _paragraph(item.get("causes"), styles["AGBody"]),
-                Paragraph("Proceso de diagnóstico paso a paso", styles["AGSection"]), _paragraph(item.get("steps"), styles["AGBody"]),
-                Paragraph("Sensores y parámetros relacionados", styles["AGSection"]), _paragraph(item.get("sensors"), styles["AGBody"]),
-                Paragraph("Herramientas y recursos", styles["AGSection"]), _paragraph(item.get("tools"), styles["AGBody"]),
-                Paragraph("Validación posterior a la reparación", styles["AGSection"]), _paragraph(item.get("validation"), styles["AGBody"]),
-                Spacer(1, 5 * mm),
-            ]
-            story.append(KeepTogether(blocks[:2]))
-            story.extend(blocks[2:])
 
     story.extend([
         Paragraph("INTERPRETACIÓN RESPONSABLE", styles["AGSection"]),
@@ -304,11 +370,135 @@ def generate_pdf_report(
             [["Técnico responsable", "Recepción del cliente"], [_safe(vehicle.get("tecnico") or author), ""]],
             colWidths=[87 * mm, 87 * mm], rowHeights=[8 * mm, 20 * mm],
             style=TableStyle([
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("GRID", (0, 0), (-1, -1), 0.5, MID), ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 5), ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 0.5, MID),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
             ]),
         ),
     ])
+
+    if dtc_list:
+        processed: set[tuple[str, str]] = set()
+        subreports: list[Mapping[str, object]] = []
+        for item in dtc_list:
+            key = (_safe(item.get("code")), _safe(item.get("manufacturer")))
+            if key not in processed:
+                processed.add(key)
+                subreports.append(item)
+
+        for index, item in enumerate(subreports, start=1):
+            code = _safe(item.get("code"))
+            manufacturer = _safe(item.get("manufacturer"))
+            severity = _safe(item.get("severity", "Por confirmar"))
+            story.extend([
+                PageBreak(),
+                Paragraph("SUBINFORME TÉCNICO DE PROCEDIMIENTOS", styles["AGSubreportTitle"]),
+                Paragraph(
+                    f"Subinforme {index} de {len(subreports)} · Complemento operativo del informe principal · Folio {report_id}",
+                    styles["AGSubreportSubtitle"],
+                ),
+            ])
+
+            heading = Table([
+                [Paragraph(f"{code} · {_safe(item.get('description'))}", styles["AGCode"]), severity]
+            ], colWidths=[145 * mm, 29 * mm])
+            heading.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), LIGHT),
+                ("BOX", (0, 0), (-1, -1), 0.8, BRAND),
+                ("TEXTCOLOR", (1, 0), (1, 0), _severity_color(severity)),
+                ("FONTNAME", (1, 0), (1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (1, 0), (1, 0), 8),
+                ("ALIGN", (1, 0), (1, 0), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ]))
+            story.append(heading)
+
+            identification = Table([
+                ["Sistema", _safe(item.get("system")), "Estado", _safe(item.get("status"))],
+                ["Fabricante", manufacturer, "Severidad", severity],
+                ["Vehículo", f"{_safe(vehicle.get('marca'))} {_safe(vehicle.get('modelo'))}", "Patente", _safe(vehicle.get("patente"))],
+            ], colWidths=[25 * mm, 62 * mm, 25 * mm, 62 * mm])
+            identification.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#AAB1BC")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]))
+            story.extend([Spacer(1, 3 * mm), identification])
+
+            story.extend([
+                Paragraph("1. OBJETIVO DE LA REVISIÓN", styles["AGSection"]),
+                Paragraph(
+                    f"Confirmar técnicamente la condición asociada al código {code}, identificar la causa raíz y verificar la reparación antes de reemplazar componentes.",
+                    styles["AGBody"],
+                ),
+                Paragraph("2. CONDICIONES PREVIAS Y SEGURIDAD", styles["AGSection"]),
+                Paragraph(
+                    "Inmovilizar el vehículo, aplicar freno de estacionamiento, utilizar EPP, controlar fuentes de energía y temperatura, conservar la evidencia del escaneo y consultar especificaciones OEM antes de desmontar o intervenir componentes.",
+                    styles["AGBody"],
+                ),
+                Paragraph("3. SÍNTOMAS PROBABLES", styles["AGSection"]),
+                _paragraph(item.get("symptoms"), styles["AGBody"]),
+                Paragraph("4. CAUSAS PROBABLES", styles["AGSection"]),
+                _paragraph(item.get("causes"), styles["AGBody"]),
+                Paragraph("5. HERRAMIENTAS Y RECURSOS", styles["AGSection"]),
+                _paragraph(item.get("tools"), styles["AGBody"]),
+                Paragraph("6. SENSORES Y PARÁMETROS RELACIONADOS", styles["AGSection"]),
+                _paragraph(item.get("sensors"), styles["AGBody"]),
+                Paragraph("7. PROCEDIMIENTO PASO A PASO", styles["AGSection"]),
+                _procedure_table(item, styles),
+                Paragraph("8. VALIDACIÓN POSTERIOR A LA REPARACIÓN", styles["AGSection"]),
+                _paragraph(item.get("validation"), styles["AGBody"]),
+                Paragraph("9. RESULTADO DEL SUBINFORME", styles["AGSection"]),
+            ])
+
+            result_table = Table([
+                ["Resultado de la revisión", "[  ] Conforme    [  ] Reparar    [  ] Requiere prueba adicional"],
+                ["Causa confirmada", ""],
+                ["Acción realizada", ""],
+                ["Lectura / medición final", ""],
+                ["Observaciones", ""],
+            ], colWidths=[48 * mm, 126 * mm], rowHeights=[9 * mm, 15 * mm, 15 * mm, 15 * mm, 25 * mm])
+            result_table.setStyle(TableStyle([
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 0.45, MID),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ]))
+            story.extend([
+                result_table,
+                Spacer(1, 7 * mm),
+                Table(
+                    [["Técnico responsable", "Fecha / hora", "Firma"], [_safe(vehicle.get("tecnico") or author), "", ""]],
+                    colWidths=[74 * mm, 50 * mm, 50 * mm], rowHeights=[8 * mm, 18 * mm],
+                    style=TableStyle([
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, -1), 8),
+                        ("GRID", (0, 0), (-1, -1), 0.45, MID),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                        ("TOPPADDING", (0, 0), (-1, -1), 5),
+                    ]),
+                ),
+                Paragraph(
+                    "Este subinforme es una guía técnica complementaria. Los valores, pares de apriete, diagramas, secuencias de desmontaje y criterios definitivos deben confirmarse con la información OEM del vehículo exacto.",
+                    styles["AGWarning"],
+                ),
+            ])
+
     document.build(story, onFirstPage=footer, onLaterPages=footer)
     return output
