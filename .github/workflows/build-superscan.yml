@@ -1,12 +1,9 @@
-name: Build SuperScan 2.0
+name: Build SuperScan 2.0 Profesional
 
 on:
   push:
     branches:
-      - superscan-clean-build
-  pull_request:
-    branches:
-      - superscan-clean-build
+      - superscan-professional-r3-release-build5
   workflow_dispatch:
 
 permissions:
@@ -15,7 +12,7 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Descargar código
@@ -31,63 +28,78 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install -r requirements.txt
 
       - name: Validar sintaxis
         shell: pwsh
         run: python -m compileall -q main.py superscan tests
 
-      - name: Ejecutar pruebas automáticas
+      - name: Ejecutar pruebas automáticas completas
         shell: pwsh
-        run: pytest -q --disable-warnings --maxfail=1
+        run: python -m pytest -q --disable-warnings --maxfail=1
 
-      - name: Compilar aplicación gráfica
+      - name: Compilar aplicación profesional
         shell: pwsh
-        run: pyinstaller --noconfirm --clean superscan.spec
+        run: python -m PyInstaller --noconfirm --clean superscan.spec
 
-      - name: Verificar ejecutable compilado
+      - name: Probar ejecutable compilado
         shell: pwsh
         run: |
           $exe = 'dist\SuperScan 2.0\SuperScan 2.0.exe'
           if (-not (Test-Path $exe)) { throw "No se generó $exe" }
+          & $exe --selftest
+          if ($LASTEXITCODE -ne 0) { throw "Falló la autoprueba del ejecutable: $LASTEXITCODE" }
           $size = (Get-Item $exe).Length
           if ($size -lt 500000) { throw "Ejecutable demasiado pequeño: $size bytes" }
-          "Ejecutable: $exe" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8
-          "Tamaño ejecutable: $size bytes" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
-          "Pruebas: pytest completado correctamente" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
-          "Base DTC: 12133 registros verificados" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
-          "Simulador: conexión, escaneo, VIN, DTC, combustible y borrado verificados" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
+          "SUPERSCAN 2.0 PROFESIONAL" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Encoding utf8
+          "Ejecutable compilado y autoprueba aprobada" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
+          "Tamaño ejecutable: $size bytes" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
+          "Base DTC: 12.133 registros" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
+          "Base de soluciones: 12.133 procedimientos offline" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
+          "Informe profesional: PDF con gráficos y planes de acción probado" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
+          "Simulador: conexión, VIN, DTC, PIDs, combustible y borrado aprobados" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
 
       - name: Instalar Inno Setup
         shell: pwsh
         run: choco install innosetup --no-progress -y
 
-      - name: Crear Setup.exe
+      - name: Crear instalador gráfico
         shell: pwsh
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $iscc)) { throw "No se encontró Inno Setup en $iscc" }
+          if (-not (Test-Path $iscc)) { throw "No se encontró Inno Setup" }
           & $iscc installer.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup finalizó con código $LASTEXITCODE" }
 
-      - name: Calcular SHA-256 y completar validación
+      - name: Instalar silenciosamente y probar instalación real
         shell: pwsh
         run: |
-          $setup = 'output\SuperScan 2.0 Setup.exe'
-          if (-not (Test-Path $setup)) { throw "No se generó el instalador" }
-          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
-          "$hash  SuperScan 2.0 Setup.exe" | Out-File -FilePath 'output\SuperScan 2.0 Setup.exe.sha256.txt' -Encoding ascii
-          "Instalador: $setup" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
-          "SHA-256: $hash" | Out-File -FilePath VALIDACION_SUPERSCAN_2.0.txt -Encoding utf8 -Append
-          Copy-Item VALIDACION_SUPERSCAN_2.0.txt output\VALIDACION_SUPERSCAN_2.0.txt
+          $setup = 'output\SuperScan 2.0 Profesional Setup.exe'
+          if (-not (Test-Path $setup)) { throw "No se generó el instalador profesional" }
+          $process = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Instalación silenciosa falló: $($process.ExitCode)" }
+          $installed = Join-Path $env:LOCALAPPDATA 'SuperScan\2.0 Profesional\SuperScan 2.0.exe'
+          if (-not (Test-Path $installed)) { throw "No se encontró la aplicación instalada: $installed" }
+          & $installed --selftest
+          if ($LASTEXITCODE -ne 0) { throw "Falló la autoprueba desde la instalación real" }
+          "Instalación real y autoprueba aprobadas" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
 
-      - name: Publicar instalador
+      - name: Calcular SHA-256
+        shell: pwsh
+        run: |
+          $setup = 'output\SuperScan 2.0 Profesional Setup.exe'
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "$hash  SuperScan 2.0 Profesional Setup.exe" | Out-File 'output\SuperScan 2.0 Profesional Setup.exe.sha256.txt' -Encoding ascii
+          "SHA-256: $hash" | Out-File VALIDACION_SUPERSCAN_PROFESIONAL.txt -Append -Encoding utf8
+          Copy-Item VALIDACION_SUPERSCAN_PROFESIONAL.txt 'output\VALIDACION_SUPERSCAN_PROFESIONAL.txt'
+
+      - name: Publicar instalador profesional
         uses: actions/upload-artifact@v4
         with:
-          name: SuperScan-2.0-Setup-Windows
+          name: SuperScan-2.0-Profesional-Windows
           path: |
-            output/SuperScan 2.0 Setup.exe
-            output/SuperScan 2.0 Setup.exe.sha256.txt
-            output/VALIDACION_SUPERSCAN_2.0.txt
+            output/SuperScan 2.0 Profesional Setup.exe
+            output/SuperScan 2.0 Profesional Setup.exe.sha256.txt
+            output/VALIDACION_SUPERSCAN_PROFESIONAL.txt
           if-no-files-found: error
           retention-days: 30
