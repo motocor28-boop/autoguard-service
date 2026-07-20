@@ -12,6 +12,13 @@ def require_markers(path: Path, markers: tuple[str, ...], label: str) -> None:
             raise RuntimeError(f"{label}: falta marcador {marker}")
 
 
+def require_absent(path: Path, markers: tuple[str, ...], label: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    for marker in markers:
+        if marker in text:
+            raise RuntimeError(f"{label}: marcador no permitido {marker}")
+
+
 def main() -> None:
     required = [
         ROOT / "app.py",
@@ -99,11 +106,30 @@ def main() -> None:
         "Base Premium",
     )
     require_markers(
+        ROOT / "reporting.py",
+        (
+            "SUBINFORME TÉCNICO DE PROCEDIMIENTOS",
+            "PROCEDIMIENTO PASO A PASO",
+            "Registro técnico",
+            "Folio",
+            "version` se mantiene por compatibilidad",
+        ),
+        "Informe y subinformes técnicos",
+    )
+    require_absent(
+        ROOT / "reporting.py",
+        (
+            '["Fecha y hora", now.strftime("%d-%m-%Y %H:%M"), "Versión", version]',
+            'f"AUTOGUARD SCAN DIOS v{version}',
+        ),
+        "Eliminación de versión visible en PDF",
+    )
+    require_markers(
         ROOT / "make_icon.py",
         ("AUTO GUARD", "SERVICE", "TU VEHÍCULO, NUESTRA PRIORIDAD", "autoguard.ico"),
         "Branding oficial",
     )
-    print("Fuente NIVEL DIOS PREMIUM con navegación por páginas preparada para Windows")
+    print("Fuente NIVEL DIOS PREMIUM con informe principal y subinformes preparada para Windows")
 
 
 if __name__ == "__main__":
