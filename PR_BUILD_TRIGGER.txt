@@ -1,3 +1,4 @@
 Solicitar compilación y validación completa de SuperScan 2.0 para Windows.
 Segundo ciclo: pruebas separadas para diagnóstico exacto.
 Tercer ciclo: exportar el detalle de la prueba del catálogo DTC.
+Cuarto ciclo: publicar el error exacto en la revisión técnica.
