@@ -8,6 +8,7 @@ on:
       - "desktop/autoguard_scan_dios_v6_2/**"
       - ".github/workflows/build-autoguard-scan.yml"
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
