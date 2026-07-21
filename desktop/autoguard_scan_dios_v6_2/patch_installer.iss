@@ -76,7 +76,7 @@ begin
     Candidate := RemoveBackslashUnlessRoot(Candidate);
   end;
 
-  if (Candidate = '') or not FileExists(AddBackslash(Candidate) + '{#AppExeName}') then
+  if Candidate = '' then
   begin
     Candidate := ExpandConstant('{localappdata}\Autoguard\Fusion Scanner DIOS v6.2');
   end;
@@ -90,23 +90,20 @@ begin
   Result := ResolveInstallDir;
 end;
 
-function InitializeSetup(): Boolean;
+function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   AppPath: string;
 begin
-  AppPath := AddBackslash(ResolveInstallDir) + '{#AppExeName}';
+  AppPath := AddBackslash(ExpandConstant('{app}')) + '{#AppExeName}';
   if not FileExists(AppPath) then
   begin
-    MsgBox(
-      'No se encontró una instalación válida de AUTOGUARD SCAN DIOS v6.2.2.' + #13#10 + #13#10 +
-      'Instale primero la versión completa y luego ejecute este parche.',
-      mbError,
-      MB_OK
-    );
-    Result := False;
+    Result :=
+      'No se encontró una instalación válida de AUTOGUARD SCAN DIOS v6.2.2 en:' + #13#10 +
+      ExpandConstant('{app}') + #13#10 + #13#10 +
+      'Instale primero la versión completa y luego ejecute este parche.';
     exit;
   end;
-  Result := True;
+  Result := '';
 end;
 
 procedure StopAutoguard;
@@ -130,13 +127,15 @@ var
   BackupRoot: string;
   Parameters: string;
   ManifestText: string;
+  SourceDir: string;
 begin
+  SourceDir := RemoveBackslashUnlessRoot(ExpandConstant('{app}'));
   BackupRoot := ExpandConstant('{localappdata}\Autoguard\Backups');
   ForceDirectories(BackupRoot);
   BackupDir := AddBackslash(BackupRoot) + 'Informe_Premium_' + GetDateTimeString('yyyymmdd_hhnnss', '', '');
   ForceDirectories(BackupDir);
 
-  Parameters := '"' + ResolveInstallDir + '" "' + BackupDir + '" /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /XD logs';
+  Parameters := '"' + SourceDir + '" "' + BackupDir + '" /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /XD logs';
   Exec(
     ExpandConstant('{sys}\robocopy.exe'),
     Parameters,
@@ -149,7 +148,8 @@ begin
   ManifestText :=
     'RESPALDO AUTOMÁTICO AUTOGUARD SCAN DIOS' + #13#10 +
     'Fecha: ' + GetDateTimeString('dd/mm/yyyy hh:nn:ss', '', '') + #13#10 +
-    'Origen: ' + ResolveInstallDir + #13#10 +
+    'Origen: ' + SourceDir + #13#10 +
+    'Resultado robocopy: ' + IntToStr(ResultCode) + #13#10 +
     'Parche: Informe Maestro Premium' + #13#10;
   SaveStringToFile(AddBackslash(BackupDir) + 'RESPALDO_AUTOGUARD.txt', ManifestText, False);
 end;
