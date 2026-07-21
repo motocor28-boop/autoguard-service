@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import queue
 import time
+import tkinter as tk
 from contextlib import contextmanager
+from types import TracebackType
 from typing import Any, Callable, Iterator
 
 from core import PID_DEFINITIONS
 from navigation_premium_app import NavigationPremiumApp
-from premium_app import MUTED, ORANGE, ORANGE_LIGHT, TEXT
+from premium_app import ORANGE, ORANGE_LIGHT
 
 NAV_VERSION = "6.2.6 PARCHE CONSOLIDADO"
 NAV_BUILD = "Inicio en menú · Navegación fluida · Informe maestro · Recuperación automática"
@@ -29,9 +31,14 @@ _PAGE_LABELS = {
 
 
 class OptimizedNavigationApp(NavigationPremiumApp):
-    """Capa consolidada que elimina el salto inicial y reduce los redibujos ocultos."""
+    """Capa consolidada con inicio limpio, renderizado selectivo y ciclo Tk seguro."""
 
     def __init__(self) -> None:
+        # Estos atributos deben existir antes de que PremiumApp programe el primer
+        # callback after(). Así la llamada inicial también queda bajo control.
+        self._closing = False
+        self._drain_after_id: str | None = None
+        self._drain_running = False
         self._startup_complete = False
         self._active_page_name: str | None = None
         self._previous_page_name: str | None = None
@@ -45,21 +52,114 @@ class OptimizedNavigationApp(NavigationPremiumApp):
         self.update_idletasks()
         try:
             self.deiconify()
-        except Exception:
+        except tk.TclError:
             pass
 
+    # ------------------------------------------------------------------
+    # Ciclo after() protegido
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _is_drain_callback(func: Callable[..., Any]) -> bool:
+        return getattr(func, "__name__", "") == "_drain_queues"
+
+    def after(self, ms: int, func: Callable[..., Any] | None = None, *args: Any) -> str:
+        """Intercepta solamente el temporizador principal y evita duplicados."""
+        if func is not None and self._is_drain_callback(func):
+            return self._schedule_drain(ms)
+        if getattr(self, "_closing", False):
+            return ""
+        return super().after(ms, func, *args)
+
+    def _schedule_drain(self, ms: int = 80) -> str:
+        if getattr(self, "_closing", False):
+            return ""
+
+        existing = getattr(self, "_drain_after_id", None)
+        if existing:
+            try:
+                super().after_cancel(existing)
+            except tk.TclError:
+                pass
+            self._drain_after_id = None
+
+        def run_once() -> None:
+            self._drain_after_id = None
+            if self._closing:
+                return
+            if self._drain_running:
+                self._schedule_drain(ms)
+                return
+            self._drain_running = True
+            try:
+                self._drain_queues()
+            except tk.TclError as exc:
+                # Un callback tardío durante el cierre no debe convertir un cierre
+                # normal en un fallo de inicio.
+                if self._closing or "invalid command name" in str(exc).casefold():
+                    return
+                raise
+            finally:
+                self._drain_running = False
+
+        self._drain_after_id = super().after(max(20, int(ms)), run_once)
+        return self._drain_after_id
+
+    def _cancel_drain_loop(self) -> None:
+        callback_id = getattr(self, "_drain_after_id", None)
+        self._drain_after_id = None
+        if callback_id:
+            try:
+                super().after_cancel(callback_id)
+            except tk.TclError:
+                pass
+
+    def _on_close(self) -> None:
+        if self._closing:
+            return
+        self._closing = True
+        self._cancel_drain_loop()
+        try:
+            super()._on_close()
+        except tk.TclError as exc:
+            if "invalid command name" not in str(exc).casefold():
+                raise
+
+    def destroy(self) -> None:
+        self._closing = True
+        self._cancel_drain_loop()
+        try:
+            super().destroy()
+        except tk.TclError as exc:
+            if "invalid command name" not in str(exc).casefold():
+                raise
+
+    def report_callback_exception(
+        self,
+        exc_type: type[BaseException],
+        exc_value: BaseException,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        if isinstance(exc_value, tk.TclError):
+            message = str(exc_value).casefold()
+            if self._closing or "invalid command name" in message:
+                return
+        super().report_callback_exception(exc_type, exc_value, exc_traceback)
+
+    # ------------------------------------------------------------------
+    # Construcción e intercambio de páginas
+    # ------------------------------------------------------------------
     def _build_pages(self) -> None:
         # La ventana permanece oculta mientras se construyen las páginas. De esta
         # forma los relojes nunca aparecen antes que el menú principal.
         try:
             self.withdraw()
-        except Exception:
+        except tk.TclError:
             pass
         super()._build_pages()
 
     def _show_page(self, name: str) -> None:
         pages = getattr(self, "pages", None)
-        if not pages:
+        if not pages or self._closing:
             return
         if not self._startup_complete and "Inicio" in pages:
             name = "Inicio"
@@ -101,6 +201,8 @@ class OptimizedNavigationApp(NavigationPremiumApp):
             self._page_switching = False
 
     def _refresh_active_page(self) -> None:
+        if self._closing:
+            return
         active = self._active_page_name
         if active == "Datos en vivo":
             for gauge_name in (
@@ -115,7 +217,7 @@ class OptimizedNavigationApp(NavigationPremiumApp):
                 if gauge is not None:
                     try:
                         gauge.draw()
-                    except Exception:
+                    except tk.TclError:
                         pass
             self._refresh_dashboard_from_latest()
         elif active == "Sensores por sistema":
@@ -125,13 +227,13 @@ class OptimizedNavigationApp(NavigationPremiumApp):
             if canvas is not None:
                 try:
                     canvas.redraw()
-                except Exception:
+                except tk.TclError:
                     pass
 
     def _refresh_dashboard_from_latest(self) -> None:
         tree = getattr(self, "dashboard_tree", None)
         items = getattr(self, "dashboard_items", {})
-        if tree is None:
+        if tree is None or self._closing:
             return
         for pid, item in items.items():
             name, unit = PID_DEFINITIONS.get(pid, (f"PID 01{pid:02X}", ""))
@@ -142,7 +244,7 @@ class OptimizedNavigationApp(NavigationPremiumApp):
     def _refresh_sensor_table_from_latest(self) -> None:
         tree = getattr(self, "live_tree", None)
         items = getattr(self, "live_items", {})
-        if tree is None:
+        if tree is None or self._closing:
             return
         for pid, item in items.items():
             name, unit = PID_DEFINITIONS.get(pid, (f"PID 01{pid:02X}", ""))
@@ -219,7 +321,7 @@ class OptimizedNavigationApp(NavigationPremiumApp):
             original_redraw = scope.redraw
 
             def limited_scope_redraw(*_args: Any, **_kwargs: Any) -> None:
-                if active != "Osciloscopio ECU":
+                if active != "Osciloscopio ECU" or self._closing:
                     return
                 now = time.monotonic()
                 if now - self._last_scope_redraw < 0.10:
@@ -263,10 +365,10 @@ class OptimizedNavigationApp(NavigationPremiumApp):
                     target.signal = signal
                     now = time.monotonic()
                     last = self._last_gauge_redraw.get(id(target), 0.0)
-                    if active == "Datos en vivo" and now - last >= 0.10:
+                    if active == "Datos en vivo" and now - last >= 0.10 and not self._closing:
                         self._last_gauge_redraw[id(target)] = now
                         target.draw()
-                except Exception:
+                except (tk.TclError, AttributeError):
                     pass
 
             replace(gauge, "set_value", limited_set_value)
@@ -289,10 +391,12 @@ class OptimizedNavigationApp(NavigationPremiumApp):
             for obj, name, original in reversed(saved):
                 try:
                     setattr(obj, name, original)
-                except Exception:
+                except (tk.TclError, AttributeError):
                     pass
 
     def _drain_queues(self) -> None:
+        if self._closing:
+            return
         # Se conserva el último valor de cada PID y se evita dibujar repetidamente
         # paquetes acumulados durante una operación pesada.
         self._coalesce_live_packets()
