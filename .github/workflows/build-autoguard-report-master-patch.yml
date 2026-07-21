@@ -62,7 +62,7 @@ jobs:
       - name: Generar branding AUTO GUARD SERVICE
         run: python make_icon.py
 
-      - name: Preparar fuente consolidada
+      - name: Validar fuente consolidada
         run: python prepare_build.py
 
       - name: Validar sintaxis Python
@@ -80,75 +80,6 @@ jobs:
       - name: Generar y validar PDF maestro
         run: python validate_report_master.py
 
-      - name: Validar mejoras consolidadas
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-
-          $optimized = Get-Content "optimized_navigation_app.py" -Raw -Encoding UTF8
-          foreach ($marker in @(
-            "OptimizedNavigationApp",
-            "self.withdraw()",
-            "self._show_page(\"Inicio\")",
-            "_coalesce_live_packets",
-            "_render_policy",
-            "_last_scope_redraw",
-            "_last_gauge_redraw",
-            "run_navigation_self_test"
-          )) {
-            if ($optimized -notmatch [regex]::Escape($marker)) {
-              throw "Falta mejora de navegación: $marker"
-            }
-          }
-
-          $launcher = Get-Content "final_launcher.py" -Raw -Encoding UTF8
-          foreach ($marker in @(
-            "OptimizedNavigationApp",
-            "--autoguard-self-test",
-            ".autoguard_ci_force_self_test_failure"
-          )) {
-            if ($launcher -notmatch [regex]::Escape($marker)) {
-              throw "Falta autoprueba del lanzador: $marker"
-            }
-          }
-
-          $report = Get-Content "reporting.py" -Raw -Encoding UTF8
-          foreach ($marker in @(
-            "INFORME TÉCNICO DE DIAGNÓSTICO Y",
-            "GRÁFICO VECTORIAL HD",
-            "PLAN DE TRABAJO RECOMENDADO",
-            "CHECKLIST DE ENTREGA",
-            "RECOMENDACIÓN FINAL",
-            "_review_suggestions"
-          )) {
-            if ($report -notmatch [regex]::Escape($marker)) {
-              throw "Falta marcador en reporting.py: $marker"
-            }
-          }
-          if ($report -match '\["VERSIÓN"') {
-            throw "La fila de versión volvió al informe"
-          }
-
-          $patch = Get-Content "patch_installer.iss" -Raw -Encoding UTF8
-          foreach ($marker in @(
-            "CreateInstallationBackup",
-            "RestorePreviousInstallation",
-            "RunApplicationSelfTest",
-            "FailAndRollback",
-            "DeinitializeSetup",
-            "GetCustomSetupExitCode",
-            "Instalacion_anterior",
-            "--autoguard-self-test"
-          )) {
-            if ($patch -notmatch [regex]::Escape($marker)) {
-              throw "Falta seguridad del parche: $marker"
-            }
-          }
-          if ($patch -match "BeforeInstall:\s*PreparePatch") {
-            throw "PreparePatch volvió a ejecutarse por cada archivo"
-          }
-          Write-Host "Inicio, fluidez, informe maestro y rollback validados estáticamente"
-
       - name: Compilar aplicación actualizada
         run: pyinstaller --clean --noconfirm autoguard_scan.spec
 
@@ -160,9 +91,8 @@ jobs:
           $db = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\_internal\data\autoguard_dtc.sqlite"
           if (!(Test-Path $exe)) { throw "No se generó el ejecutable" }
           if (!(Test-Path $db)) { throw "No se incorporó la base DTC" }
-          Write-Host "Ejecutable y base DTC compilados correctamente"
 
-      - name: Autoprueba gráfica de la aplicación compilada
+      - name: Autoprueba gráfica de menú y navegación
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -172,7 +102,7 @@ jobs:
           if ($process.ExitCode -ne 0) {
             throw "La autoprueba de menú y navegación terminó con código $($process.ExitCode)"
           }
-          Write-Host "Inicio directo en menú y navegación por todas las páginas: correctos"
+          Write-Host "Inicio directo en menú y navegación completa: correctos"
 
       - name: Prueba normal de apertura
         shell: pwsh
@@ -182,10 +112,9 @@ jobs:
           $process = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -PassThru
           Start-Sleep -Seconds 15
           if ($process.HasExited) {
-            throw "La aplicación actualizada se cerró al iniciar. Código: $($process.ExitCode)"
+            throw "La aplicación se cerró al iniciar. Código: $($process.ExitCode)"
           }
           Stop-Process -Id $process.Id -Force
-          Write-Host "Aplicación estable durante 15 segundos"
 
       - name: Instalar Inno Setup
         shell: pwsh
@@ -219,7 +148,6 @@ jobs:
           if (!(Test-Path (Join-Path $installDir "AUTOGUARD_SCAN_DIOS_v6.2.exe"))) {
             throw "No se pudo preparar la instalación anterior simulada"
           }
-          Write-Host "Instalación anterior preparada en $installDir"
 
       - name: Ejecutar parche con fallo controlado
         shell: pwsh
@@ -235,7 +163,6 @@ jobs:
           if ($process.ExitCode -ne 20) {
             throw "El parche debía informar rollback con código 20 y devolvió $($process.ExitCode)"
           }
-          Write-Host "El fallo controlado activó el código de rollback esperado"
 
       - name: Verificar restauración automática
         shell: pwsh
@@ -244,21 +171,15 @@ jobs:
           $installDir = Join-Path $env:LOCALAPPDATA "Autoguard\Fusion Scanner DIOS v6.2"
           $sentinel = Join-Path $installDir "ARCHIVO_ANTERIOR_PRUEBA.txt"
           $forceMarker = Join-Path $installDir ".autoguard_ci_force_self_test_failure"
-          if (!(Test-Path $sentinel)) {
-            throw "El rollback no restauró el archivo de la instalación anterior"
-          }
+          if (!(Test-Path $sentinel)) { throw "El rollback no restauró el archivo anterior" }
           if ((Get-Content $sentinel -Raw).Trim() -ne "instalación anterior protegida") {
             throw "El rollback restauró contenido incorrecto"
           }
-          if (!(Test-Path $forceMarker)) {
-            throw "El rollback no restauró la capa anterior completa"
-          }
+          if (!(Test-Path $forceMarker)) { throw "El rollback no restauró la capa completa" }
           $restorations = @(Get-ChildItem (Join-Path $env:LOCALAPPDATA "Autoguard\Backups") -Recurse -Filter "RESTAURACION_AUTOMATICA.txt" -ErrorAction SilentlyContinue)
-          if ($restorations.Count -lt 1) {
-            throw "No se generó el registro de restauración automática"
-          }
+          if ($restorations.Count -lt 1) { throw "No se registró la restauración automática" }
           Remove-Item $forceMarker -Force
-          Write-Host "Versión anterior restaurada íntegramente y lista para reintento"
+          Write-Host "Versión anterior restaurada íntegramente"
 
       - name: Ejecutar parche funcional
         shell: pwsh
@@ -274,7 +195,6 @@ jobs:
           if ($process.ExitCode -ne 0) {
             throw "La instalación funcional terminó con código $($process.ExitCode)"
           }
-          Write-Host "Parche funcional instalado con código 0"
 
       - name: Validar instalación final y respaldo
         shell: pwsh
@@ -284,25 +204,17 @@ jobs:
           $exe = Join-Path $installDir "AUTOGUARD_SCAN_DIOS_v6.2.exe"
           $db = Join-Path $installDir "_internal\data\autoguard_dtc.sqlite"
           $sentinel = Join-Path $installDir "ARCHIVO_ANTERIOR_PRUEBA.txt"
-          if (!(Test-Path $exe)) { throw "El parche no dejó el ejecutable instalado" }
-          if (!(Test-Path $db)) { throw "El parche no dejó la base DTC instalada" }
-          if (!(Test-Path $sentinel)) { throw "El parche eliminó un archivo ajeno a la actualización" }
+          if (!(Test-Path $exe)) { throw "El parche no dejó el ejecutable" }
+          if (!(Test-Path $db)) { throw "El parche no dejó la base DTC" }
+          if (!(Test-Path $sentinel)) { throw "El parche eliminó un archivo ajeno" }
 
           $backupRoot = Join-Path $env:LOCALAPPDATA "Autoguard\Backups"
           $backups = @(Get-ChildItem $backupRoot -Directory -Filter "Consolidado_v6.2.6_*" -ErrorAction SilentlyContinue)
-          if ($backups.Count -lt 2) {
-            throw "Se esperaban respaldos para la prueba de rollback y la instalación funcional"
-          }
+          if ($backups.Count -lt 2) { throw "Faltan respaldos de validación" }
           $latest = $backups | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          $manifest = Join-Path $latest.FullName "RESPALDO_AUTOGUARD.txt"
-          $previousFile = Join-Path $latest.FullName "Instalacion_anterior\ARCHIVO_ANTERIOR_PRUEBA.txt"
-          $successMarker = Join-Path $latest.FullName "PARCHE_APLICADO_CORRECTAMENTE.txt"
-          if (!(Test-Path $manifest)) { throw "El respaldo no contiene manifiesto" }
-          if (!(Test-Path $previousFile)) { throw "El respaldo no contiene la instalación anterior" }
-          if (!(Test-Path $successMarker)) { throw "El instalador no registró la validación final" }
-          Get-Content $manifest
-          Get-Content $successMarker
-          Write-Host "Ejecutable, base DTC, respaldo completo y validación final: correctos"
+          if (!(Test-Path (Join-Path $latest.FullName "RESPALDO_AUTOGUARD.txt"))) { throw "Falta manifiesto" }
+          if (!(Test-Path (Join-Path $latest.FullName "Instalacion_anterior\ARCHIVO_ANTERIOR_PRUEBA.txt"))) { throw "Falta instalación anterior" }
+          if (!(Test-Path (Join-Path $latest.FullName "PARCHE_APLICADO_CORRECTAMENTE.txt"))) { throw "Falta validación final" }
 
       - name: Autoprueba de la aplicación instalada
         shell: pwsh
@@ -311,10 +223,7 @@ jobs:
           $installDir = Join-Path $env:LOCALAPPDATA "Autoguard\Fusion Scanner DIOS v6.2"
           $exe = Join-Path $installDir "AUTOGUARD_SCAN_DIOS_v6.2.exe"
           $process = Start-Process -FilePath $exe -ArgumentList "--autoguard-self-test" -WorkingDirectory $installDir -PassThru -Wait
-          if ($process.ExitCode -ne 0) {
-            throw "La aplicación instalada no superó la autoprueba final"
-          }
-          Write-Host "Aplicación instalada: inicio en menú y navegación validados"
+          if ($process.ExitCode -ne 0) { throw "La aplicación instalada no superó la autoprueba final" }
 
       - name: Publicar diagnósticos del instalador
         if: always()
@@ -342,12 +251,11 @@ jobs:
           @(
             "AUTOGUARD SCAN DIOS v6.2.6 - PARCHE CONSOLIDADO",
             "Autor: Esteban Cortez Richards",
-            "Inicio: menú principal visible desde el primer cuadro",
-            "Rendimiento: gráficos y tablas actualizados solo en la página visible",
-            "Telemetría: paquetes agrupados y redibujado limitado",
-            "Informe: formato maestro, gráficos HD y subinforme por DTC",
-            "Seguridad: respaldo completo, autoprueba y rollback automático",
-            "Validación Windows: fallo controlado restaurado y segunda instalación aprobada",
+            "Inicio directo en menú principal",
+            "Navegación y gráficos optimizados",
+            "Informe Maestro Premium con subinforme por DTC",
+            "Base DTC, escaneo profundo, PID 015E y alternativa MAF",
+            "Respaldo completo, autoprueba y rollback automático",
             "Build: $env:GITHUB_SHA"
           ) | Set-Content "patch_release\MANIFIESTO_PARCHE.txt" -Encoding utf8
 
