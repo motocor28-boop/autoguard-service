@@ -56,6 +56,7 @@ const
 var
   CachedInstallDir: string;
   BackupDir: string;
+  BackupCreated: Boolean;
 
 function ResolveInstallDir: string;
 var
@@ -113,6 +114,9 @@ var
   ManifestText: string;
   SourceDir: string;
 begin
+  if BackupCreated then
+    exit;
+
   SourceDir := RemoveBackslashUnlessRoot(ExpandConstant('{app}'));
   BackupRoot := ExpandConstant('{localappdata}\Autoguard\Backups');
   ForceDirectories(BackupRoot);
@@ -122,7 +126,7 @@ begin
   ResultCode := 0;
   if DirExists(SourceDir) then
   begin
-    Parameters := '"' + SourceDir + '" "' + BackupDir + '" /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /XD logs';
+    Parameters := '"' + SourceDir + '" "' + BackupDir + '" /E /COPY:DAT /DCOPY:T /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /XD logs';
     Exec(
       ExpandConstant('{sys}\robocopy.exe'),
       Parameters,
@@ -140,15 +144,14 @@ begin
     'Resultado robocopy: ' + IntToStr(ResultCode) + #13#10 +
     'Parche: Informe Maestro Premium' + #13#10;
   SaveStringToFile(AddBackslash(BackupDir) + 'RESPALDO_AUTOGUARD.txt', ManifestText, False);
+  BackupCreated := True;
 end;
 
-procedure CurStepChanged(CurStep: TSetupStep);
+function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
-  if CurStep = ssInstall then
-  begin
-    StopAutoguard;
-    CreateInstallationBackup;
-  end;
+  StopAutoguard;
+  CreateInstallationBackup;
+  Result := '';
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
