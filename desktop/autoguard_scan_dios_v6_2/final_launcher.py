@@ -42,6 +42,11 @@ def main() -> None:
 
     if "--autoguard-self-test" in sys.argv:
         try:
+            # Marcador reservado exclusivamente para comprobar en CI que el
+            # instalador restaura la versión anterior cuando la autoprueba falla.
+            force_failure = Path.cwd() / ".autoguard_ci_force_self_test_failure"
+            if force_failure.exists():
+                raise RuntimeError("Fallo controlado de autoprueba para validar rollback")
             run_navigation_self_test()
             return
         except Exception as exc:
