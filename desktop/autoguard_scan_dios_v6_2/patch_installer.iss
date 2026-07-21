@@ -39,12 +39,8 @@ InfoAfterFile=PATCH_NOTES_INFORME_MAESTRO.txt
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
-[InstallDelete]
-Type: files; Name: "{app}\{#AppExeName}"
-Type: filesandordirs; Name: "{app}\_internal"
-
 [Files]
-Source: "dist\AUTOGUARD_SCAN_DIOS_v6.2\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\AUTOGUARD_SCAN_DIOS_v6.2\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; BeforeInstall: PreparePatch
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "Abrir AUTOGUARD SCAN DIOS actualizado"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent
@@ -57,6 +53,7 @@ var
   CachedInstallDir: string;
   BackupDir: string;
   BackupCreated: Boolean;
+  PatchPrepared: Boolean;
 
 function ResolveInstallDir: string;
 var
@@ -147,11 +144,20 @@ begin
   BackupCreated := True;
 end;
 
-function PrepareToInstall(var NeedsRestart: Boolean): String;
+procedure PreparePatch;
+var
+  AppDir: string;
 begin
+  if PatchPrepared then
+    exit;
+
   StopAutoguard;
   CreateInstallationBackup;
-  Result := '';
+
+  AppDir := RemoveBackslashUnlessRoot(ExpandConstant('{app}'));
+  DeleteFile(AddBackslash(AppDir) + '{#AppExeName}');
+  DelTree(AddBackslash(AppDir) + '_internal', True, True, True);
+  PatchPrepared := True;
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
