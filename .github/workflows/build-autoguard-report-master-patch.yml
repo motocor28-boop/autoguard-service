@@ -183,25 +183,49 @@ jobs:
             Write-Host "Inno Setup devolvió código 0"
           }
 
-      - name: Validar archivos y respaldo del parche
+      - name: Validar ejecutable y base instalados
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
           $installDir = Join-Path $env:LOCALAPPDATA "Autoguard\Fusion Scanner DIOS v6.2"
-          $backupRoot = Join-Path $env:LOCALAPPDATA "Autoguard\Backups"
           $exe = Join-Path $installDir "AUTOGUARD_SCAN_DIOS_v6.2.exe"
           $db = Join-Path $installDir "_internal\data\autoguard_dtc.sqlite"
           if (!(Test-Path $exe)) { throw "El parche no dejó el ejecutable instalado" }
           if (!(Test-Path $db)) { throw "El parche no dejó la base DTC instalada" }
+          Write-Host "Ejecutable y base DTC instalados correctamente"
+
+      - name: Localizar y listar respaldo
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $backupRoot = Join-Path $env:LOCALAPPDATA "Autoguard\Backups"
           $backups = @(Get-ChildItem $backupRoot -Directory -Filter "Informe_Premium_*" -ErrorAction SilentlyContinue)
           if ($backups.Count -lt 1) { throw "El parche no creó respaldo automático" }
           $latestBackup = $backups | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          $manifest = Join-Path $latestBackup.FullName "RESPALDO_AUTOGUARD.txt"
+          $latestBackup.FullName | Set-Content (Join-Path $PWD "latest-backup-path.txt") -Encoding utf8
+          Write-Host "Respaldo localizado: $($latestBackup.FullName)"
+          Get-ChildItem $latestBackup.FullName -Recurse -Force | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
+
+      - name: Validar manifiesto del respaldo
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $backupPath = (Get-Content (Join-Path $PWD "latest-backup-path.txt") -Raw).Trim()
+          $manifest = Join-Path $backupPath "RESPALDO_AUTOGUARD.txt"
           if (!(Test-Path $manifest)) { throw "El respaldo no contiene su manifiesto" }
-          if (!(Test-Path (Join-Path $latestBackup.FullName "ARCHIVO_ANTERIOR_PRUEBA.txt"))) {
-            throw "El respaldo no conservó los archivos de la instalación anterior"
-          }
-          Write-Host "Archivos actualizados y respaldo validado: $($latestBackup.FullName)"
+          Get-Content $manifest
+          Write-Host "Manifiesto del respaldo validado"
+
+      - name: Validar conservación de instalación anterior
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $backupPath = (Get-Content (Join-Path $PWD "latest-backup-path.txt") -Raw).Trim()
+          $previousFile = Join-Path $backupPath "ARCHIVO_ANTERIOR_PRUEBA.txt"
+          if (!(Test-Path $previousFile)) { throw "El respaldo no conservó ARCHIVO_ANTERIOR_PRUEBA.txt" }
+          $content = (Get-Content $previousFile -Raw).Trim()
+          if ($content -ne "instalación previa simulada") { throw "El archivo anterior fue copiado con contenido incorrecto" }
+          Write-Host "Instalación anterior conservada correctamente"
 
       - name: Abrir aplicación parcheada
         shell: pwsh
