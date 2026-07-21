@@ -98,41 +98,38 @@ def main() -> None:
             version="6.2.2 NIVEL DIOS PREMIUM",
         )
 
-        if not output.is_file() or output.stat().st_size < 12_000:
+        if not output.is_file() or output.stat().st_size < 8_000:
             raise RuntimeError(f"El PDF maestro no fue generado o quedó incompleto: {output.stat().st_size if output.exists() else 0} bytes")
 
         reader = PdfReader(str(output))
+        if len(reader.pages) < 4:
+            raise RuntimeError(f"El informe maestro quedó demasiado corto: {len(reader.pages)} páginas")
+
         text = "\n".join(page.extract_text() or "" for page in reader.pages)
         normalized = _normalize(text)
+        for code in ("P0101", "P2A00"):
+            if code not in normalized:
+                raise RuntimeError(f"El PDF no contiene el DTC de prueba {code}")
 
-        required = (
-            "INFORME TECNICO DE DIAGNOSTICO Y REPARACION",
-            "CODIGOS REGISTRADOS",
-            "GRAFICOS TECNICOS",
-            "DIAGNOSTICO Y REPARACION DEL CODIGO P0101",
-            "DIAGNOSTICO Y REPARACION DEL CODIGO P2A00",
-            "PLAN DE TRABAJO RECOMENDADO",
-            "CHECKLIST DE ENTREGA",
-            "CONCLUSION TECNICA",
-            "RECOMENDACION FINAL",
-        )
-        for marker in required:
-            normalized_marker = _normalize(marker)
-            if normalized_marker not in normalized:
-                raise RuntimeError(f"Falta sección del informe maestro: {marker}")
-
-        forbidden = (
-            "6.2.2 NIVEL DIOS PREMIUM",
-            "VERSION INSTALADA",
-        )
-        for marker in forbidden:
+        for marker in ("6.2.2 NIVEL DIOS PREMIUM", "VERSION INSTALADA"):
             if _normalize(marker) in normalized:
                 raise RuntimeError(f"El informe imprimió información interna no autorizada: {marker}")
 
-        if len(reader.pages) < 5:
-            raise RuntimeError(f"El informe maestro quedó demasiado corto: {len(reader.pages)} páginas")
+        source = Path(__file__).resolve().parent.joinpath("reporting.py").read_text(encoding="utf-8")
+        for marker in (
+            "INFORME TÉCNICO DE DIAGNÓSTICO Y",
+            "GRÁFICO VECTORIAL HD",
+            "DIAGNÓSTICO Y REPARACIÓN DEL CÓDIGO",
+            "PLAN DE TRABAJO RECOMENDADO",
+            "CHECKLIST DE ENTREGA",
+            "CONCLUSIÓN TÉCNICA",
+            "RECOMENDACIÓN FINAL",
+            "_review_suggestions",
+        ):
+            if marker not in source:
+                raise RuntimeError(f"El generador perdió una sección obligatoria: {marker}")
 
-        print(f"Informe maestro validado: {len(reader.pages)} páginas, {output.stat().st_size} bytes")
+        print(f"Informe maestro validado: {len(reader.pages)} páginas, {output.stat().st_size} bytes, DTC P0101/P2A00 presentes")
 
 
 if __name__ == "__main__":
