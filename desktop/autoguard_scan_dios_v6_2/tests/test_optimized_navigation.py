@@ -26,11 +26,27 @@ def test_optimized_navigation_limits_hidden_rendering() -> None:
         assert marker in source
 
 
-def test_launcher_exposes_silent_self_test() -> None:
+def test_after_loop_is_single_cancelable_and_close_safe() -> None:
+    source = (ROOT / "optimized_navigation_app.py").read_text(encoding="utf-8")
+    for marker in (
+        "_drain_after_id",
+        "_drain_running",
+        "_schedule_drain",
+        "_cancel_drain_loop",
+        "report_callback_exception",
+        '"invalid command name"',
+        "super().after_cancel",
+    ):
+        assert marker in source
+
+
+def test_launcher_exposes_silent_self_test_without_fatal_dialog() -> None:
     source = (ROOT / "final_launcher.py").read_text(encoding="utf-8")
     assert '"--autoguard-self-test" in sys.argv' in source
     assert "run_navigation_self_test()" in source
     assert "OptimizedNavigationApp" in source
+    assert "SystemExit(23)" in source
+    assert "raise SystemExit(1)" in source
 
 
 def test_patch_installer_has_full_backup_healthcheck_and_rollback() -> None:
@@ -45,6 +61,7 @@ def test_patch_installer_has_full_backup_healthcheck_and_rollback() -> None:
         "--autoguard-self-test",
         "Instalacion_anterior",
         "RollbackExitCode",
+        "GetDateTimeString('yyyymmdd_hhnnss', #0, #0)",
     ):
         assert marker in source
     assert "BeforeInstall: PreparePatch" not in source
