@@ -147,21 +147,37 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
+          $installDir = Join-Path $env:LOCALAPPDATA "Autoguard\Fusion Scanner DIOS v6.2"
           $patch = Join-Path $PWD "patch_output\AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe"
           $log = Join-Path $PWD "patch-install.log"
+          $exitFile = Join-Path $PWD "patch-exit-code.txt"
           if (!(Test-Path $patch)) { throw "No se encontró el parche compilado" }
-          $arguments = @(
-            "/VERYSILENT",
-            "/SUPPRESSMSGBOXES",
-            "/NORESTART",
-            "/LOG=$log"
-          )
-          $process = Start-Process -FilePath $patch -ArgumentList $arguments -PassThru -Wait
-          if ($process.ExitCode -ne 0) {
-            if (Test-Path $log) { Get-Content $log }
-            throw "El parche falló durante la instalación de prueba: $($process.ExitCode)"
-          }
-          if (Test-Path $log) { Get-Content $log | Select-Object -Last 40 }
+          $argumentLine = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR="' + $installDir + '" /LOG="' + $log + '"'
+          Write-Host "Ejecutando parche en: $installDir"
+          $process = Start-Process -FilePath $patch -ArgumentList $argumentLine -PassThru -Wait
+          "$($process.ExitCode)" | Set-Content $exitFile -Encoding ascii
+          if (Test-Path $log) { Get-Content $log | Select-Object -Last 80 }
+          Write-Host "Código de salida del parche: $($process.ExitCode)"
+
+      - name: Publicar diagnóstico del instalador
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AUTOGUARD_PATCH_INSTALL_DIAGNOSTIC
+          path: |
+            desktop/autoguard_scan_dios_v6_2/patch-install.log
+            desktop/autoguard_scan_dios_v6_2/patch-exit-code.txt
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Comprobar resultado del parche
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $exitFile = Join-Path $PWD "patch-exit-code.txt"
+          if (!(Test-Path $exitFile)) { throw "No se registró el código de salida del parche" }
+          $exitCode = [int](Get-Content $exitFile -Raw)
+          if ($exitCode -ne 0) { throw "El parche falló durante la instalación de prueba: $exitCode" }
           Write-Host "Parche ejecutado correctamente"
 
       - name: Validar archivos y respaldo del parche
