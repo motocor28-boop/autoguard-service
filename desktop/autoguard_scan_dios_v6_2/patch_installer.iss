@@ -140,7 +140,7 @@ begin
 
   BackupRoot := ExpandConstant('{localappdata}\Autoguard\Backups');
   ForceDirectories(BackupRoot);
-  BackupDir := AddBackslash(BackupRoot) + 'Consolidado_v6.2.6_' + GetDateTimeString('yyyymmdd_hhnnss', '', '');
+  BackupDir := AddBackslash(BackupRoot) + 'Consolidado_v6.2.6_' + GetDateTimeString('yyyymmdd_hhnnss', #0, #0);
   BackupPayloadDir := AddBackslash(BackupDir) + 'Instalacion_anterior';
   ForceDirectories(BackupPayloadDir);
 
@@ -167,7 +167,7 @@ begin
 
   ManifestText :=
     'RESPALDO AUTOMÁTICO AUTOGUARD SCAN DIOS' + #13#10 +
-    'Fecha: ' + GetDateTimeString('dd/mm/yyyy hh:nn:ss', '', '') + #13#10 +
+    'Fecha: ' + GetDateTimeString('dd/mm/yyyy hh:nn:ss', '-', ':') + #13#10 +
     'Origen: ' + SourceDir + #13#10 +
     'Contenido: ' + BackupPayloadDir + #13#10 +
     'Resultado robocopy: ' + IntToStr(ResultCode) + #13#10 +
@@ -213,7 +213,7 @@ begin
     SaveStringToFile(
       AddBackslash(BackupDir) + 'RESTAURACION_AUTOMATICA.txt',
       'La instalación anterior fue restaurada automáticamente el ' +
-      GetDateTimeString('dd/mm/yyyy hh:nn:ss', '', '') + #13#10 +
+      GetDateTimeString('dd/mm/yyyy hh:nn:ss', '-', ':') + #13#10 +
       'Motivo: ' + FailureReason + #13#10,
       False
     );
@@ -327,7 +327,7 @@ begin
       SaveStringToFile(
         AddBackslash(BackupDir) + 'PARCHE_APLICADO_CORRECTAMENTE.txt',
         'AUTOGUARD SCAN DIOS v6.2.6 fue validado y quedó activo el ' +
-        GetDateTimeString('dd/mm/yyyy hh:nn:ss', '', '') + #13#10,
+        GetDateTimeString('dd/mm/yyyy hh:nn:ss', '-', ':') + #13#10,
         False
       );
     end;
