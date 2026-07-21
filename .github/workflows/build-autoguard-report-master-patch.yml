@@ -128,26 +128,73 @@ jobs:
           $patch = "patch_output\AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe"
           if (!(Test-Path $patch)) { throw "No se generó el parche instalable" }
 
-      - name: Probar instalación real del parche
+      - name: Preparar instalación simulada para el parche
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
           $installDir = Join-Path $env:LOCALAPPDATA "Autoguard\Fusion Scanner DIOS v6.2"
           $backupRoot = Join-Path $env:LOCALAPPDATA "Autoguard\Backups"
+          if (Test-Path $installDir) { Remove-Item $installDir -Recurse -Force }
+          if (Test-Path $backupRoot) { Remove-Item $backupRoot -Recurse -Force }
           New-Item -ItemType Directory -Force -Path $installDir | Out-Null
           Copy-Item "dist\AUTOGUARD_SCAN_DIOS_v6.2\*" $installDir -Recurse -Force
-          $patch = Join-Path $PWD "patch_output\AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe"
-          $process = Start-Process -FilePath $patch -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" -PassThru -Wait
-          if ($process.ExitCode -ne 0) { throw "El parche falló durante la instalación de prueba: $($process.ExitCode)" }
           $exe = Join-Path $installDir "AUTOGUARD_SCAN_DIOS_v6.2.exe"
+          if (!(Test-Path $exe)) { throw "No se pudo preparar la instalación simulada" }
+          "instalación previa simulada" | Set-Content (Join-Path $installDir "ARCHIVO_ANTERIOR_PRUEBA.txt") -Encoding utf8
+          Write-Host "Instalación simulada preparada en $installDir"
+
+      - name: Ejecutar parche sobre instalación simulada
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $patch = Join-Path $PWD "patch_output\AUTOGUARD_SCAN_DIOS_v6.2.2_PATCH_INFORME_MAESTRO_Setup.exe"
+          $log = Join-Path $PWD "patch-install.log"
+          if (!(Test-Path $patch)) { throw "No se encontró el parche compilado" }
+          $arguments = @(
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",
+            "/LOG=$log"
+          )
+          $process = Start-Process -FilePath $patch -ArgumentList $arguments -PassThru -Wait
+          if ($process.ExitCode -ne 0) {
+            if (Test-Path $log) { Get-Content $log }
+            throw "El parche falló durante la instalación de prueba: $($process.ExitCode)"
+          }
+          if (Test-Path $log) { Get-Content $log | Select-Object -Last 40 }
+          Write-Host "Parche ejecutado correctamente"
+
+      - name: Validar archivos y respaldo del parche
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installDir = Join-Path $env:LOCALAPPDATA "Autoguard\Fusion Scanner DIOS v6.2"
+          $backupRoot = Join-Path $env:LOCALAPPDATA "Autoguard\Backups"
+          $exe = Join-Path $installDir "AUTOGUARD_SCAN_DIOS_v6.2.exe"
+          $db = Join-Path $installDir "_internal\data\autoguard_dtc.sqlite"
           if (!(Test-Path $exe)) { throw "El parche no dejó el ejecutable instalado" }
+          if (!(Test-Path $db)) { throw "El parche no dejó la base DTC instalada" }
           $backups = @(Get-ChildItem $backupRoot -Directory -Filter "Informe_Premium_*" -ErrorAction SilentlyContinue)
           if ($backups.Count -lt 1) { throw "El parche no creó respaldo automático" }
+          $latestBackup = $backups | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          $manifest = Join-Path $latestBackup.FullName "RESPALDO_AUTOGUARD.txt"
+          if (!(Test-Path $manifest)) { throw "El respaldo no contiene su manifiesto" }
+          if (!(Test-Path (Join-Path $latestBackup.FullName "ARCHIVO_ANTERIOR_PRUEBA.txt"))) {
+            throw "El respaldo no conservó los archivos de la instalación anterior"
+          }
+          Write-Host "Archivos actualizados y respaldo validado: $($latestBackup.FullName)"
+
+      - name: Abrir aplicación parcheada
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installDir = Join-Path $env:LOCALAPPDATA "Autoguard\Fusion Scanner DIOS v6.2"
+          $exe = Join-Path $installDir "AUTOGUARD_SCAN_DIOS_v6.2.exe"
           $app = Start-Process -FilePath $exe -WorkingDirectory $installDir -PassThru
           Start-Sleep -Seconds 15
           if ($app.HasExited) { throw "La aplicación parcheada se cerró al iniciar. Código: $($app.ExitCode)" }
           Stop-Process -Id $app.Id -Force
-          Write-Host "Parche instalado, respaldo creado y aplicación estable"
+          Write-Host "Aplicación parcheada estable durante 15 segundos"
 
       - name: Crear paquete y hashes
         shell: pwsh
