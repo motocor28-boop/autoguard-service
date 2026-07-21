@@ -1,9 +1,18 @@
-AUTOGUARD SCAN DIOS v6.2.2
-PARCHE INFORME MAESTRO PREMIUM
+AUTOGUARD SCAN DIOS v6.2.6
+PARCHE CONSOLIDADO AUTOMÁTICO
 
-Este parche actualiza el generador de informes técnicos sin borrar la configuración, historial ni registros del usuario.
+Este parche actualiza AUTOGUARD SCAN DIOS sin borrar la configuración, historial ni registros del usuario.
 
-MEJORAS INCLUIDAS
+MEJORAS DE INTERFAZ Y RENDIMIENTO
+- Inicio directo en MENÚ PRINCIPAL; los relojes ya no aparecen antes del menú.
+- Cambio inmediato entre páginas mediante elevación directa de la página seleccionada.
+- Actualización gráfica limitada a la página visible.
+- El osciloscopio oculto deja de redibujarse y, cuando está visible, se actualiza una sola vez por ciclo.
+- Los relojes conservan sus valores, pero se dibujan únicamente en Datos en vivo y con frecuencia controlada.
+- Agrupación de paquetes de telemetría acumulados para evitar bloqueos de la interfaz.
+- Tablas grandes actualizadas solamente cuando corresponde y reconstruidas al ingresar a su página.
+
+INFORME MAESTRO PREMIUM
 - Formato maestro basado en el informe técnico AUTOGUARD aprobado.
 - Portada profesional con número de informe, vehículo, cliente, prioridad y alcance.
 - Eliminación de la fila de versión visible en el PDF.
@@ -11,22 +20,36 @@ MEJORAS INCLUIDAS
 - Gráficos vectoriales HD con mínimo, promedio, máximo e interpretación técnica.
 - Sugerencias de revisión específicas según código y sistema.
 - Procedimientos numerados de diagnóstico y reparación.
-- Subinforme técnico por cada DTC.
+- Subinforme técnico paso a paso por cada DTC.
 - Plan de trabajo recomendado.
 - Checklist de entrega y validación final.
 - Conclusión técnica y recomendación final.
 - Estado SIN CÓDIGOS ACTIVOS cuando la ECU no informa DTC.
 
-INSTALACIÓN
+FUNCIONES CONSOLIDADAS
+- Escaneo profundo OBD-II y UDS de solo lectura.
+- Escaneo y códigos con historial de códigos borrados.
+- Base DTC offline ampliada, incluido U0123.
+- Detección extendida de PID mediante bloques 0100, 0120, 0140 y siguientes.
+- Flujómetro directo PID 015E en L/h.
+- Alternativa desde MAF identificada expresamente cuando PID 015E no está disponible.
+- Página independiente Información de la aplicación.
+- Autor visible: Esteban Cortez Richards.
+
+INSTALACIÓN AUTOMÁTICA Y SEGURA
 1. Cierre AUTOGUARD SCAN DIOS.
-2. Ejecute el parche.
+2. Ejecute AUTOGUARD_SCAN_DIOS_v6.2.6_PARCHE_CONSOLIDADO_Setup.exe.
 3. El instalador detectará la carpeta existente.
-4. Se creará un respaldo automático antes de reemplazar archivos.
-5. Al finalizar se podrá abrir la aplicación actualizada.
+4. Antes de reemplazar archivos creará una copia completa de la instalación anterior.
+5. Instalará la actualización y ejecutará una autoprueba gráfica silenciosa.
+6. Solo confirmará la actualización cuando la aplicación inicie en el menú y todas las páginas puedan abrirse.
+7. Si falla la copia, la validación o la autoprueba, eliminará la actualización incompleta y restaurará automáticamente la versión anterior.
 
 RESPALDO
 El respaldo se guarda en:
-%LOCALAPPDATA%\Autoguard\Backups\Informe_Premium_<fecha_hora>
+%LOCALAPPDATA%\Autoguard\Backups\Consolidado_v6.2.6_<fecha_hora>
+
+El respaldo contiene la carpeta Instalacion_anterior y un manifiesto de trazabilidad.
 
 REQUISITO
-Debe existir una instalación previa de AUTOGUARD SCAN DIOS v6.2.2.
+Debe existir una instalación previa de AUTOGUARD SCAN DIOS v6.2 para PC.
