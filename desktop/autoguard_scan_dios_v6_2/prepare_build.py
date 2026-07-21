@@ -23,6 +23,7 @@ def main() -> None:
     required = [
         ROOT / "app.py",
         ROOT / "final_launcher.py",
+        ROOT / "optimized_navigation_app.py",
         ROOT / "navigation_premium_app.py",
         ROOT / "god_premium_app.py",
         ROOT / "premium_gauges.py",
@@ -36,6 +37,7 @@ def main() -> None:
         ROOT / "core.py",
         ROOT / "dtc_database.py",
         ROOT / "reporting.py",
+        ROOT / "patch_installer.iss",
         ROOT / "data" / "autoguard_dtc.sqlite",
         ROOT / "autoguard.ico",
         ROOT / "autoguard.png",
@@ -48,13 +50,39 @@ def main() -> None:
     require_markers(ROOT / "app.py", ("from final_launcher import main", "diagnostic_parsers"), "Arranque final")
     require_markers(
         ROOT / "final_launcher.py",
-        ("NavigationPremiumApp", "NAV_VERSION", "enable_windows_dpi_awareness"),
-        "Lanzador final",
+        (
+            "OptimizedNavigationApp",
+            "NAV_VERSION",
+            "enable_windows_dpi_awareness",
+            "--autoguard-self-test",
+            "run_navigation_self_test",
+            ".autoguard_ci_force_self_test_failure",
+        ),
+        "Lanzador final optimizado",
+    )
+    require_absent(
+        ROOT / "final_launcher.py",
+        ("app = NavigationPremiumApp()",),
+        "Eliminación del lanzador anterior",
+    )
+    require_markers(
+        ROOT / "optimized_navigation_app.py",
+        (
+            "6.2.6 PARCHE CONSOLIDADO",
+            "class OptimizedNavigationApp",
+            "self.withdraw()",
+            'self._show_page("Inicio")',
+            "_coalesce_live_packets",
+            "_render_policy",
+            "_last_scope_redraw",
+            "_last_gauge_redraw",
+            "run_navigation_self_test",
+        ),
+        "Inicio y navegación optimizados",
     )
     require_markers(
         ROOT / "navigation_premium_app.py",
         (
-            "6.2.2 NIVEL DIOS PREMIUM",
             "MENÚ PRINCIPAL",
             "Sensores por sistema",
             "MODO ESCÁNER",
@@ -130,11 +158,30 @@ def main() -> None:
         "Eliminación de versión visible en PDF",
     )
     require_markers(
+        ROOT / "patch_installer.iss",
+        (
+            "v6.2.6 - PARCHE CONSOLIDADO",
+            "CreateInstallationBackup",
+            "RunApplicationSelfTest",
+            "RestorePreviousInstallation",
+            "FailAndRollback",
+            "DeinitializeSetup",
+            "GetCustomSetupExitCode",
+            "Instalacion_anterior",
+        ),
+        "Parche automático con recuperación",
+    )
+    require_absent(
+        ROOT / "patch_installer.iss",
+        ("BeforeInstall: PreparePatch",),
+        "Preparación única del parche",
+    )
+    require_markers(
         ROOT / "make_icon.py",
         ("AUTO GUARD", "SERVICE", "TU VEHÍCULO, NUESTRA PRIORIDAD", "autoguard.ico"),
         "Branding oficial",
     )
-    print("Fuente NIVEL DIOS PREMIUM con Informe Maestro preparada para Windows")
+    print("Fuente v6.2.6 consolidada con inicio optimizado, Informe Maestro y rollback preparada para Windows")
 
 
 if __name__ == "__main__":
