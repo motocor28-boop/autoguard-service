@@ -26,7 +26,7 @@ premium_app.APP_BUILD = NAV_BUILD
 premium_app.estimate_fuel_rate_from_maf = estimate_fuel_rate_from_maf
 
 
-def _write_startup_log(exc: Exception, suffix: str = "INICIO_ERROR") -> Path:
+def _write_startup_log(exc: BaseException, suffix: str = "INICIO_ERROR") -> Path:
     log_dir = Path.home() / "AppData" / "Local" / "Autoguard" / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / f"AUTOGUARD_NAVEGACION_PREMIUM_{suffix}.log"
@@ -49,14 +49,19 @@ def main() -> None:
                 raise RuntimeError("Fallo controlado de autoprueba para validar rollback")
             run_navigation_self_test()
             return
-        except Exception as exc:
+        except BaseException as exc:
             _write_startup_log(exc, "AUTOPRUEBA_ERROR")
-            raise
+            # SystemExit evita el cuadro fatal de PyInstaller y permite que el
+            # instalador reciba de inmediato un código de salud no satisfactorio.
+            raise SystemExit(23) from None
 
     try:
         app = OptimizedNavigationApp()
         app.mainloop()
-    except Exception as exc:
+    except BaseException as exc:
+        # Una salida normal nunca debe generar un segundo cuadro de error.
+        if isinstance(exc, SystemExit):
+            raise
         log_file = _write_startup_log(exc)
         try:
             root = tk.Tk()
@@ -68,7 +73,7 @@ def main() -> None:
             root.destroy()
         except Exception:
             pass
-        raise
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":
