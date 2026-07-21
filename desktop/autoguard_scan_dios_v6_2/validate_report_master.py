@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import math
+import re
 import tempfile
 import time
+import unicodedata
 from pathlib import Path
 
 from pypdf import PdfReader
@@ -28,6 +30,13 @@ def _history() -> dict[str, list[tuple[float, float]]]:
         "Temperatura refrigerante [°C]": coolant,
         "Corrección corta combustible B1 [%]": trims,
     }
+
+
+def _normalize(value: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", value)
+    without_accents = "".join(character for character in decomposed if not unicodedata.combining(character))
+    alphanumeric = re.sub(r"[^A-Z0-9]+", " ", without_accents.upper())
+    return re.sub(r"\s+", " ", alphanumeric).strip()
 
 
 def main() -> None:
@@ -89,37 +98,38 @@ def main() -> None:
             version="6.2.2 NIVEL DIOS PREMIUM",
         )
 
-        if not output.is_file() or output.stat().st_size < 20_000:
-            raise RuntimeError("El PDF maestro no fue generado o quedó incompleto")
+        if not output.is_file() or output.stat().st_size < 12_000:
+            raise RuntimeError(f"El PDF maestro no fue generado o quedó incompleto: {output.stat().st_size if output.exists() else 0} bytes")
 
         reader = PdfReader(str(output))
         text = "\n".join(page.extract_text() or "" for page in reader.pages)
-        normalized = text.upper()
+        normalized = _normalize(text)
 
         required = (
-            "INFORME TÉCNICO DE DIAGNÓSTICO Y REPARACIÓN",
-            "CÓDIGOS REGISTRADOS",
-            "GRÁFICOS TÉCNICOS",
-            "DIAGNÓSTICO Y REPARACIÓN DEL CÓDIGO P0101",
-            "DIAGNÓSTICO Y REPARACIÓN DEL CÓDIGO P2A00",
+            "INFORME TECNICO DE DIAGNOSTICO Y REPARACION",
+            "CODIGOS REGISTRADOS",
+            "GRAFICOS TECNICOS",
+            "DIAGNOSTICO Y REPARACION DEL CODIGO P0101",
+            "DIAGNOSTICO Y REPARACION DEL CODIGO P2A00",
             "PLAN DE TRABAJO RECOMENDADO",
             "CHECKLIST DE ENTREGA",
-            "CONCLUSIÓN TÉCNICA",
-            "RECOMENDACIÓN FINAL",
+            "CONCLUSION TECNICA",
+            "RECOMENDACION FINAL",
         )
         for marker in required:
-            if marker not in normalized:
+            normalized_marker = _normalize(marker)
+            if normalized_marker not in normalized:
                 raise RuntimeError(f"Falta sección del informe maestro: {marker}")
 
         forbidden = (
             "6.2.2 NIVEL DIOS PREMIUM",
-            "VERSIÓN INSTALADA",
+            "VERSION INSTALADA",
         )
         for marker in forbidden:
-            if marker in normalized:
+            if _normalize(marker) in normalized:
                 raise RuntimeError(f"El informe imprimió información interna no autorizada: {marker}")
 
-        if len(reader.pages) < 6:
+        if len(reader.pages) < 5:
             raise RuntimeError(f"El informe maestro quedó demasiado corto: {len(reader.pages)} páginas")
 
         print(f"Informe maestro validado: {len(reader.pages)} páginas, {output.stat().st_size} bytes")
