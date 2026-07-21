@@ -40,7 +40,7 @@ InfoAfterFile=PATCH_NOTES_INFORME_MAESTRO.txt
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [Files]
-Source: "dist\AUTOGUARD_SCAN_DIOS_v6.2\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; BeforeInstall: PreparePatch
+Source: "dist\AUTOGUARD_SCAN_DIOS_v6.2\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "Abrir AUTOGUARD SCAN DIOS actualizado"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent
@@ -158,6 +158,14 @@ begin
   DeleteFile(AddBackslash(AppDir) + '{#AppExeName}');
   DelTree(AddBackslash(AppDir) + '_internal', True, True, True);
   PatchPrepared := True;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssInstall then
+  begin
+    PreparePatch;
+  end;
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
