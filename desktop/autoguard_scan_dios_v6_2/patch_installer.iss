@@ -90,22 +90,6 @@ begin
   Result := ResolveInstallDir;
 end;
 
-function PrepareToInstall(var NeedsRestart: Boolean): String;
-var
-  AppPath: string;
-begin
-  AppPath := AddBackslash(ExpandConstant('{app}')) + '{#AppExeName}';
-  if not FileExists(AppPath) then
-  begin
-    Result :=
-      'No se encontró una instalación válida de AUTOGUARD SCAN DIOS v6.2.2 en:' + #13#10 +
-      ExpandConstant('{app}') + #13#10 + #13#10 +
-      'Instale primero la versión completa y luego ejecute este parche.';
-    exit;
-  end;
-  Result := '';
-end;
-
 procedure StopAutoguard;
 var
   ResultCode: Integer;
@@ -135,15 +119,19 @@ begin
   BackupDir := AddBackslash(BackupRoot) + 'Informe_Premium_' + GetDateTimeString('yyyymmdd_hhnnss', '', '');
   ForceDirectories(BackupDir);
 
-  Parameters := '"' + SourceDir + '" "' + BackupDir + '" /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /XD logs';
-  Exec(
-    ExpandConstant('{sys}\robocopy.exe'),
-    Parameters,
-    '',
-    SW_HIDE,
-    ewWaitUntilTerminated,
-    ResultCode
-  );
+  ResultCode := 0;
+  if DirExists(SourceDir) then
+  begin
+    Parameters := '"' + SourceDir + '" "' + BackupDir + '" /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /XD logs';
+    Exec(
+      ExpandConstant('{sys}\robocopy.exe'),
+      Parameters,
+      '',
+      SW_HIDE,
+      ewWaitUntilTerminated,
+      ResultCode
+    );
+  end;
 
   ManifestText :=
     'RESPALDO AUTOMÁTICO AUTOGUARD SCAN DIOS' + #13#10 +
