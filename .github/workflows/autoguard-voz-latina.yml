@@ -9,6 +9,7 @@ on:
 
 jobs:
   generar-voz:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -55,3 +56,4 @@ jobs:
     uses: ./.github/workflows/build-autoguard-scan.yml
     permissions:
       contents: read
+
