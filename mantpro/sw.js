@@ -1,1 +1,6 @@
-const C='mantpro-cloud-v2',A=['./','./index.html','./styles.css','./app.js','./auth.js','./config.js','./manifest.webmanifest'];self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(A)).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(x=>Promise.all(x.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{if(e.request.method==='GET')e.respondWith(fetch(e.request).then(r=>{let z=r.clone();caches.open(C).then(c=>c.put(e.request,z));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('./'))))});
+const CACHE='mantpro-cloud-v6';
+const ASSETS=['./','./index.html','./instalar.html','./styles.css?v=6','./config.js?v=6','./auth.js?v=6','./app.js?v=6','./manifest.webmanifest'];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',event=>{if(event.request.method!=='GET'||new URL(event.request.url).origin!==location.origin)return;event.respondWith(fetch(event.request).then(response=>{const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy));return response}).catch(()=>caches.match(event.request).then(hit=>hit||caches.match('./'))))});
+
