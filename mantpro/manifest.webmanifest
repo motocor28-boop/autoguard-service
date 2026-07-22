@@ -1,7 +1,7 @@
 {
   "name":"MANTPRO IA Cloud",
   "short_name":"MANTPRO IA",
-  "description":"GestiÃ³n mÃ³vil de mantenciÃ³n, seguridad e informes tÃ©cnicos de planta.",
+  "description":"Gestión móvil de mantención, seguridad e informes técnicos de planta.",
   "id":"./",
   "start_url":"./",
   "scope":"./",
