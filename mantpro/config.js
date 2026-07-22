@@ -1,2 +1,2 @@
 // La publishable key es publica por diseno. La seguridad real se aplica con RLS en Supabase.
-window.MANTPRO_CONFIG={supabaseUrl:'https://gecrjlkfrcrlsjhanfjz.supabase.co',supabaseAnonKey:'sb_publishable_bJlPZe-8xMdmvnVNkInSLg_phBKSoaa',supervisor:'Esteban Cortez Richards',allowedEmail:'engimec@outlook.cl'};
+window.MANTPRO_CONFIG={supabaseUrl:'https://gecrjlkfrcrlsjhanfjz.supabase.co',supabaseAnonKey:'sb_publishable_bJlPZe-8xMdmvnVNkInSLg_phBKSoaa',supervisor:'Esteban Cortez Richards',allowedEmail:'gmailmotocor28@gmail.com'};
