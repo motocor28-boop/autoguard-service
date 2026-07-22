@@ -5,16 +5,17 @@ Dirección oficial: https://motocor28-boop.github.io/autoguard-service/mantpro/
 ## Computador Windows
 
 1. Abra la dirección oficial en Microsoft Edge.
-2. Ingrese `motocor28@gmail.com` y abra el enlace recibido desde Supabase.
-3. En Edge seleccione **… > Aplicaciones > Instalar este sitio como una aplicación**.
-4. Active el acceso directo del escritorio y, si lo desea, ancle MANTPRO a la barra de tareas.
+2. En el primer acceso, escriba el usuario `esteban`, cree una contraseña personal de al menos 8 caracteres y pulse **Crear usuario por primera vez**.
+3. Inicie sesión con ese mismo usuario y contraseña.
+4. En Edge seleccione **… > Aplicaciones > Instalar este sitio como una aplicación**.
+5. Active el acceso directo del escritorio y, si lo desea, ancle MANTPRO a la barra de tareas.
 
 No se instala un servidor, base de datos, PowerShell ni archivos CMD. La información queda en Supabase Cloud y se conserva temporalmente en el equipo cuando no hay internet.
 
 ## Teléfono Android
 
 1. Abra la misma dirección oficial en Google Chrome.
-2. Ingrese `motocor28@gmail.com` y abra el enlace recibido desde Supabase en el mismo teléfono.
+2. Inicie sesión con el usuario `esteban` y la contraseña creada en el computador.
 3. En Chrome seleccione **⋮ > Agregar a pantalla principal > Instalar**.
 4. Autorice cámara y fotografías cuando MANTPRO lo solicite.
 
