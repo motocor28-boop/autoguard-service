@@ -1,10 +1,68 @@
-/* Vinculación por enlace mágico. La sesión se guarda en este dispositivo. */
-(()=>{const C=window.MANTPRO_CONFIG||{},K='mantpro-session',base=C.supabaseUrl;
-const get=()=>{try{return JSON.parse(localStorage.getItem(K)||'null')}catch{return null}},set=x=>localStorage.setItem(K,JSON.stringify(x));
-function token(){let s=get();return s&&s.access_token}
-const originalFetch=window.fetch.bind(window);window.fetch=(url,opt={})=>{if(typeof url==='string'&&base&&url.startsWith(base)){let h=new Headers(opt.headers||{});if(token())h.set('Authorization','Bearer '+token());h.set('apikey',C.supabaseAnonKey);opt={...opt,headers:h}}return originalFetch(url,opt)};
-function overlay(){if(document.getElementById('auth'))return;document.body.insertAdjacentHTML('beforeend','<div id="auth" style="position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:#15191ef5"><form id="authform" style="max-width:420px;width:100%;background:#20262d;border:1px solid #37414d;border-radius:14px;padding:24px;color:#f5f7f9;font:16px system-ui"><h2 style="margin-top:0">Vincular MANTPRO IA</h2><p style="color:#adb8c5">Ingresa tu correo. Recibirás un enlace seguro una sola vez en este dispositivo.</p><label style="display:grid;gap:7px;color:#adb8c5">Correo electrónico<input required type="email" name="email" placeholder="tu@correo.com" style="padding:12px;border-radius:9px;background:#15191e;color:white;border:1px solid #4a5664;font:inherit"></label><p id="authmsg" style="min-height:20px;color:#adb8c5"></p><button style="width:100%;padding:12px;background:#f68b1f;border:0;border-radius:9px;font-weight:800;font-size:16px">Enviar enlace de acceso</button></form></div>');document.getElementById('authform').onsubmit=login}
-async function login(e){e.preventDefault();let email=String(new FormData(e.target).get('email')).trim().toLowerCase(),msg=document.getElementById('authmsg');if(C.allowedEmail&&email!==C.allowedEmail.toLowerCase()){msg.textContent='Este correo no está autorizado para MANTPRO IA.';return}msg.textContent='Enviando enlace…';try{let r=await originalFetch(base+'/auth/v1/otp',{method:'POST',headers:{apikey:C.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true,options:{emailRedirectTo:location.href.split('#')[0]}})});if(!r.ok){let detail=await r.json().catch(()=>({}));throw Error(detail.msg||detail.message||('Error '+r.status))}msg.textContent='Revisa tu correo y abre el enlace para terminar la vinculación.'}catch(err){msg.textContent='No fue posible enviar el enlace: '+(err.message||'error desconocido')}}
-function finish(){let h=new URLSearchParams(location.hash.slice(1));if(h.get('access_token')){set({access_token:h.get('access_token'),refresh_token:h.get('refresh_token'),expires_at:Date.now()+(+h.get('expires_in')||3600)*1000});history.replaceState({},'',location.pathname);document.getElementById('auth')?.remove();setTimeout(()=>window.sync&&window.sync(),100)}else if(!token())overlay()}
-function enhance(){if(!window.sync)return setTimeout(enhance,50);let native=window.sync;window.sync=async()=>{await native();if(!token())return;try{let r=await originalFetch(base+'/rest/v1/mantpro_records?select=payload&order=occurred_at.asc');if(!r.ok)throw Error();let remote=await r.json(),local=window.get?window.get():JSON.parse(localStorage.getItem('mantpro-records')||'[]'),ids=new Set(local.map(x=>x.id));for(let x of remote){if(x.payload&&!ids.has(x.payload.id))local.push(x.payload)}localStorage.setItem('mantpro-records',JSON.stringify(local));window.render&&window.render()}catch(e){}}}
-finish();enhance()})();
+/* SesiÃ³n segura Supabase con enlace mÃ¡gico, renovaciÃ³n automÃ¡tica y acceso persistente. */
+(()=>{
+  const C=window.MANTPRO_CONFIG||{}, base=(C.supabaseUrl||'').replace(/\/$/,''), KEY='mantpro-cloud-session-v2';
+  const rawFetch=window.fetch.bind(window);
+  const read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
+  const write=s=>s?localStorage.setItem(KEY,JSON.stringify(s)):localStorage.removeItem(KEY);
+  const token=()=>read()?.access_token||'';
+  const emit=(name,detail)=>window.dispatchEvent(new CustomEvent(name,{detail}));
+  async function authFetch(path,options={}){
+    const headers=new Headers(options.headers||{}); headers.set('apikey',C.supabaseAnonKey||'');
+    if(token())headers.set('Authorization','Bearer '+token());
+    return rawFetch(base+path,{...options,headers});
+  }
+  async function refresh(){
+    const s=read(); if(!s?.refresh_token)return false;
+    try{
+      const r=await rawFetch(base+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:C.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
+      if(!r.ok)throw Error('SesiÃ³n vencida'); const n=await r.json();
+      write({...n,expires_at:Date.now()+(Number(n.expires_in)||3600)*1000}); emit('mantpro-auth-changed',{signedIn:true}); return true;
+    }catch{write(null);emit('mantpro-auth-changed',{signedIn:false});return false}
+  }
+  async function ensure(){const s=read();if(!s)return false;if((s.expires_at||0)-Date.now()<120000)return refresh();return true}
+  window.fetch=async(url,options={})=>{
+    if(typeof url==='string'&&base&&url.startsWith(base)){
+      await ensure(); const headers=new Headers(options.headers||{});headers.set('apikey',C.supabaseAnonKey||'');if(token())headers.set('Authorization','Bearer '+token());return rawFetch(url,{...options,headers});
+    }
+    return rawFetch(url,options);
+  };
+  function overlay(){
+    if(document.getElementById('auth-overlay'))return;
+    const box=document.createElement('div');box.id='auth-overlay';box.className='auth-overlay';
+    box.innerHTML='<form id="auth-form" class="auth-card"><span class="eyebrow">Acceso privado</span><h1>Vincular MANTPRO IA</h1><p class="muted">Ingresa el correo autorizado. RecibirÃ¡s un enlace seguro y este dispositivo recordarÃ¡ la sesiÃ³n.</p><label>Correo electrÃ³nico<input required autocomplete="email" type="email" name="email" value="'+(C.allowedEmail||'')+'"></label><p id="auth-message" class="muted">No se solicita contraseÃ±a.</p><button class="primary">Enviar enlace de acceso</button><button type="button" id="auth-retry" class="outline">Ya abrÃ­ el enlace</button></form>';
+    document.body.appendChild(box);box.querySelector('#auth-form').onsubmit=requestLink;box.querySelector('#auth-retry').onclick=()=>location.reload();
+  }
+  async function requestLink(e){
+    e.preventDefault();const form=e.currentTarget,email=String(new FormData(form).get('email')||'').trim().toLowerCase(),msg=document.getElementById('auth-message'),btn=form.querySelector('button.primary');
+    if(C.allowedEmail&&email!==C.allowedEmail.toLowerCase()){msg.className='auth-error';msg.textContent='Este correo no estÃ¡ autorizado.';return}
+    btn.disabled=true;msg.className='muted';msg.textContent='Enviando enlace seguroâ€¦';
+    try{
+      const redirect=location.origin+location.pathname;
+      const r=await rawFetch(base+'/auth/v1/otp',{method:'POST',headers:{apikey:C.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true,options:{emailRedirectTo:redirect}})});
+      const detail=await r.json().catch(()=>({}));if(!r.ok)throw Error(detail.msg||detail.message||('Error '+r.status));
+      msg.className='auth-ok';msg.textContent='Enlace enviado. Revisa Gmail y abre el mensaje de Supabase.';
+    }catch(err){
+      const rate=/rate limit/i.test(err.message||'');msg.className='auth-error';msg.textContent=rate?'Supabase alcanzÃ³ temporalmente su lÃ­mite de correos. Espera unos minutos y pulsa nuevamente una sola vez.':'No fue posible enviar el enlace: '+(err.message||'error desconocido');
+    }finally{btn.disabled=false}
+  }
+  function finishCallback(){
+    const hash=new URLSearchParams(location.hash.slice(1));
+    if(hash.get('access_token')){
+      write({access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token'),token_type:hash.get('token_type')||'bearer',expires_at:Date.now()+(Number(hash.get('expires_in'))||3600)*1000});
+      history.replaceState({},'',location.pathname+location.search);return true;
+    }
+    const url=new URL(location.href),code=url.searchParams.get('code');
+    if(code){url.searchParams.delete('code');history.replaceState({},'',url.pathname+url.search);}
+    return false;
+  }
+  async function signOut(){try{await authFetch('/auth/v1/logout',{method:'POST'})}catch{}write(null);location.reload()}
+  async function start(){
+    if(location.hostname==='127.0.0.1'||location.hostname==='localhost'){emit('mantpro-auth-ready',{signedIn:true,localTest:true});return}
+    const callback=finishCallback();let ok=await ensure();if(callback)ok=true;
+    if(!ok)overlay();else document.getElementById('auth-overlay')?.remove();
+    emit('mantpro-auth-ready',{signedIn:ok});
+  }
+  window.MANTPRO_AUTH={token,session:read,ensure,authFetch,signOut,showLogin:overlay};
+  start();setInterval(()=>ensure(),60000);
+})();
+
