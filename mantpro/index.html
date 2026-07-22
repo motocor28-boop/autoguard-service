@@ -1,1 +1,36 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15191e"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css"><title>MANTPRO IA Cloud</title></head><body><header><b>▣ MANTPRO <i>IA</i></b><small id="state">Preparando</small></header><main id="app"></main><nav><button data-r="home">⌂<span>Inicio</span></button><button data-r="jobs">▣<span>Trabajos</span></button><button data-r="safety">⚠<span>Seguridad</span></button><button data-r="reports">▤<span>Informes</span></button><button data-r="more">•••<span>Más</span></button></nav><input id="photo" type="file" accept="image/*" capture="environment" hidden><script src="config.js?v=5"></script><script src="app.js?v=5"></script><script src="auth.js?v=5"></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#12171c">
+  <meta name="description" content="GestiÃ³n mÃ³vil de mantenciÃ³n, seguridad e informes tÃ©cnicos de planta.">
+  <link rel="icon" href="../logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/autoguard-menu-premium.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css?v=6">
+  <title>MANTPRO IA Cloud</title>
+</head>
+<body>
+  <header class="topbar">
+    <button id="back" class="icon-button" aria-label="Volver" hidden>â€¹</button>
+    <div class="brand"><b>MANTPRO <i>IA</i></b><small>Cloud</small></div>
+    <button id="state" class="sync-state" aria-label="Estado de sincronizaciÃ³n">Preparando</button>
+  </header>
+  <main id="app" aria-live="polite"></main>
+  <nav id="nav" class="bottom-nav" aria-label="NavegaciÃ³n principal">
+    <button data-route="home"><b>âŒ‚</b><span>Inicio</span></button>
+    <button data-route="jobs"><b>â–£</b><span>Trabajos</span></button>
+    <button data-route="safety"><b>âš </b><span>Seguridad</span></button>
+    <button data-route="reports"><b>â–¤</b><span>Informes</span></button>
+    <button data-route="more"><b>â€¢â€¢â€¢</b><span>MÃ¡s</span></button>
+  </nav>
+  <input id="photo" type="file" accept="image/*" capture="environment" hidden>
+  <input id="restore-file" type="file" accept="application/json,.json" hidden>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="config.js?v=6"></script>
+  <script src="auth.js?v=6"></script>
+  <script src="app.js?v=6"></script>
+</body>
+</html>
+
