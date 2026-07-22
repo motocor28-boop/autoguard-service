@@ -1,1 +1,18 @@
-{"name":"MANTPRO IA Cloud","short_name":"MANTPRO IA","start_url":"./","display":"standalone","background_color":"#15191e","theme_color":"#15191e","lang":"es","icons":[]}
+{
+  "name":"MANTPRO IA Cloud",
+  "short_name":"MANTPRO IA",
+  "description":"GestiÃ³n mÃ³vil de mantenciÃ³n, seguridad e informes tÃ©cnicos de planta.",
+  "id":"./",
+  "start_url":"./",
+  "scope":"./",
+  "display":"standalone",
+  "orientation":"any",
+  "background_color":"#12171c",
+  "theme_color":"#12171c",
+  "lang":"es-CL",
+  "categories":["business","productivity","utilities"],
+  "icons":[
+    {"src":"../logo.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
+
