@@ -29,21 +29,30 @@
   function overlay(){
     if(document.getElementById('auth-overlay'))return;
     const box=document.createElement('div');box.id='auth-overlay';box.className='auth-overlay';
-    box.innerHTML='<form id="auth-form" class="auth-card"><span class="eyebrow">Acceso privado</span><h1>Vincular MANTPRO IA</h1><p class="muted">Ingresa el correo autorizado. Recibirás un enlace seguro y este dispositivo recordará la sesión.</p><label>Correo electrónico<input required autocomplete="email" type="email" name="email" value="'+(C.allowedEmail||'')+'"></label><p id="auth-message" class="muted">No se solicita contraseña.</p><button class="primary">Enviar enlace de acceso</button><button type="button" id="auth-retry" class="outline">Ya abrí el enlace</button></form>';
-    document.body.appendChild(box);box.querySelector('#auth-form').onsubmit=requestLink;box.querySelector('#auth-retry').onclick=()=>location.reload();
+    box.innerHTML='<form id="auth-form" class="auth-card"><span class="eyebrow">Acceso privado</span><h1>Ingresar a MANTPRO IA</h1><p class="muted">Usa el mismo usuario y contraseña en el computador y teléfono.</p><label>Usuario<input required autocomplete="username" name="username" value="'+(C.username||'esteban')+'"></label><label>Contraseña<input required minlength="8" autocomplete="current-password" type="password" name="password" placeholder="Mínimo 8 caracteres"></label><p id="auth-message" class="muted">La sesión quedará guardada en este dispositivo.</p><button class="primary">Ingresar</button><button type="button" id="auth-register" class="outline">Crear usuario por primera vez</button></form>';
+    document.body.appendChild(box);box.querySelector('#auth-form').onsubmit=login;box.querySelector('#auth-register').onclick=register;
   }
-  async function requestLink(e){
-    e.preventDefault();const form=e.currentTarget,email=String(new FormData(form).get('email')||'').trim().toLowerCase(),msg=document.getElementById('auth-message'),btn=form.querySelector('button.primary');
-    if(C.allowedEmail&&email!==C.allowedEmail.toLowerCase()){msg.className='auth-error';msg.textContent='Este correo no está autorizado.';return}
-    btn.disabled=true;msg.className='muted';msg.textContent='Enviando enlace seguro…';
+  function credentials(form){const d=new FormData(form);return{username:String(d.get('username')||'').trim().toLowerCase(),password:String(d.get('password')||'')}}
+  function accept(data){write({...data,expires_at:Date.now()+(Number(data.expires_in)||3600)*1000});document.getElementById('auth-overlay')?.remove();emit('mantpro-auth-changed',{signedIn:true});}
+  async function login(e){
+    e.preventDefault();const form=e.currentTarget,{username,password}=credentials(form),msg=document.getElementById('auth-message'),btn=form.querySelector('button.primary');
+    if(username!==(C.username||'esteban').toLowerCase()){msg.className='auth-error';msg.textContent='Usuario incorrecto.';return}
+    btn.disabled=true;msg.className='muted';msg.textContent='Verificando acceso…';
     try{
-      const redirect=location.origin+location.pathname;
-      const r=await rawFetch(base+'/auth/v1/otp',{method:'POST',headers:{apikey:C.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true,options:{emailRedirectTo:redirect}})});
+      const r=await rawFetch(base+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:C.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({email:C.allowedEmail,password})});
       const detail=await r.json().catch(()=>({}));if(!r.ok)throw Error(detail.msg||detail.message||('Error '+r.status));
-      msg.className='auth-ok';msg.textContent='Enlace enviado. Revisa Gmail y abre el mensaje de Supabase.';
+      accept(detail);
     }catch(err){
-      const rate=/rate limit/i.test(err.message||'');msg.className='auth-error';msg.textContent=rate?'Supabase alcanzó temporalmente su límite de correos. Espera unos minutos y pulsa nuevamente una sola vez.':'No fue posible enviar el enlace: '+(err.message||'error desconocido');
+      msg.className='auth-error';msg.textContent=/invalid login/i.test(err.message||'')?'Usuario o contraseña incorrectos. Si es la primera vez, pulsa “Crear usuario”.':'No fue posible ingresar: '+(err.message||'error desconocido');
     }finally{btn.disabled=false}
+  }
+  async function register(){
+    const form=document.getElementById('auth-form'),{username,password}=credentials(form),msg=document.getElementById('auth-message'),btn=document.getElementById('auth-register');
+    if(username!==(C.username||'esteban').toLowerCase()){msg.className='auth-error';msg.textContent='Usa el usuario esteban.';return}if(password.length<8){msg.className='auth-error';msg.textContent='Crea una contraseña de al menos 8 caracteres.';return}
+    btn.disabled=true;msg.className='muted';msg.textContent='Creando usuario seguro…';
+    try{const r=await rawFetch(base+'/auth/v1/signup',{method:'POST',headers:{apikey:C.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({email:C.allowedEmail,password,data:{name:C.supervisor,username:C.username}})});const detail=await r.json().catch(()=>({}));if(!r.ok)throw Error(detail.msg||detail.message||('Error '+r.status));if(detail.access_token)accept(detail);else{msg.className='auth-ok';msg.textContent='Usuario creado. Intenta ingresar con la misma contraseña.'}}
+    catch(err){msg.className='auth-error';msg.textContent=/already registered/i.test(err.message||'')?'El usuario ya existe. Pulsa Ingresar con tu contraseña.':'No fue posible crear el usuario: '+(err.message||'error desconocido')}
+    finally{btn.disabled=false}
   }
   function finishCallback(){
     const hash=new URLSearchParams(location.hash.slice(1));
@@ -58,6 +67,7 @@
   async function signOut(){try{await authFetch('/auth/v1/logout',{method:'POST'})}catch{}write(null);location.reload()}
   async function start(){
     if(location.hostname==='127.0.0.1'||location.hostname==='localhost'){emit('mantpro-auth-ready',{signedIn:true,localTest:true});return}
+    if(C.requireAuth===false){document.getElementById('auth-overlay')?.remove();emit('mantpro-auth-ready',{signedIn:false,openMode:true});return}
     const callback=finishCallback();let ok=await ensure();if(callback)ok=true;
     if(!ok)overlay();else document.getElementById('auth-overlay')?.remove();
     emit('mantpro-auth-ready',{signedIn:ok});
