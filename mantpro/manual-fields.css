@@ -1,0 +1,27 @@
+.manual-date-time {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #171e24;
+}
+
+.manual-date-time legend {
+  padding: 0 6px;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.manual-pair {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.manual-pair input {
+  min-height: 50px;
+  font-size: 16px;
+}
+
+@media (max-width: 380px) {
+  .manual-pair { grid-template-columns: 1fr; }
+}
+
