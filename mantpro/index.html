@@ -8,7 +8,7 @@
   <link rel="icon" href="../logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/autoguard-menu-premium.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="stylesheet" href="styles.css?v=10">
   <title>MANTPRO IA Cloud</title>
 </head>
 <body>
@@ -17,6 +17,7 @@
     <div class="brand"><b>MANTPRO <i>IA</i></b><small>Cloud</small></div>
     <button id="state" class="sync-state" aria-label="Estado de sincronización">Preparando</button>
   </header>
+  <a class="install-guide-link" href="instalar.html" aria-label="Ver guía para instalar MANTPRO en computador o teléfono">Instalar en computador o teléfono</a>
   <main id="app" aria-live="polite"></main>
   <nav id="nav" class="bottom-nav" aria-label="Navegación principal">
     <button data-route="home"><b>⌂</b><span>Inicio</span></button>
@@ -28,9 +29,10 @@
   <input id="photo" type="file" accept="image/*" capture="environment" hidden>
   <input id="restore-file" type="file" accept="application/json,.json" hidden>
   <div id="toast" class="toast" role="status" hidden></div>
-  <script src="config.js?v=9"></script>
-  <script src="auth.js?v=9"></script>
-  <script src="app.js?v=9"></script>
+  <script src="config.js?v=10"></script>
+  <script src="auth.js?v=10"></script>
+  <script src="jspdf.umd.min.js?v=10"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
 
