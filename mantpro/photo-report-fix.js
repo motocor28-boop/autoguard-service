@@ -48,13 +48,14 @@
     return entries.filter(x=>{const key=x.src;if(seen.has(key))return false;seen.add(key);return true});
   }
 
-  function dateKey(v){const d=new Date(v||Date.now());return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
   function allPhotosForDay(day){
     const entries=[];
     byType('job').filter(j=>dateKey(j.data?.actualStart||j.at)===day).forEach(j=>entries.push(...photoEntriesForJob(j)));
     byType('safety').filter(x=>!x.data?.jobId&&dateKey(x.at)===day).forEach((x,i)=>photoCandidates(x).forEach((src,n)=>entries.push({record:x,src,label:x.data?.photoType||`Desviación independiente ${i+1}${n?` · Foto ${n+1}`:''}`,kind:'Seguridad'})));
     const seen=new Set();return entries.filter(x=>{if(seen.has(x.src))return false;seen.add(x.src);return true});
   }
+
+  function dateKey(v){const d=new Date(v||Date.now());return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 
   function currentJob(){
     const stored=sessionStorage.getItem('mantpro-active-report-job');
@@ -113,8 +114,9 @@
     const sheet=$('.report-sheet');if(!sheet||!$('[data-pdf-job]',sheet))return;
     const job=currentJob();if(!job)return;
     const photos=photoEntriesForJob(job);
-    $('#mantpro-photo-annex')?.remove();
-    const block=document.createElement('section');block.id='mantpro-photo-annex';block.className='report-photo-annex';
+    const signature=photos.map(p=>`${p.record?.id||''}:${p.src.length}:${p.src.slice(-24)}`).join('|')||'empty';
+    const existing=$('#mantpro-photo-annex');if(existing?.dataset.signature===signature)return;existing?.remove();
+    const block=document.createElement('section');block.id='mantpro-photo-annex';block.className='report-photo-annex';block.dataset.signature=signature;
     block.innerHTML=`<h2>Registro fotográfico (${photos.length})</h2>`+(photos.length?`<div class="report-photo-grid">${photos.map(p=>`<figure class="report-photo report-photo-fixed"><img src="${esc(p.src)}" alt="${esc(p.label)}" loading="eager"><figcaption><b>${esc(p.label)}</b><br><small>${fmt(p.record?.at)}</small></figcaption></figure>`).join('')}</div>`:'<div class="empty">No existen fotografías guardadas en esta orden. Las fotos tomadas pero no guardadas deben adjuntarse nuevamente.</div>');
     const button=$('[data-pdf-job]',sheet);sheet.insertBefore(block,button);
   }
