@@ -3,36 +3,26 @@ from __future__ import annotations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-APP = ROOT / "app.py"
-
-
-def replace_once(text: str, old: str, new: str, label: str) -> str:
-    count = text.count(old)
-    if count == 0:
-        # Permite builds repetidos cuando el parche ya fue aplicado.
-        if new in text:
-            print(f"{label}: ya aplicado")
-            return text
-        raise RuntimeError(f"No se encontró el bloque requerido: {label}")
-    if count != 1:
-        raise RuntimeError(f"El bloque {label} aparece {count} veces")
-    print(f"{label}: aplicado")
-    return text.replace(old, new, 1)
 
 
 def main() -> None:
-    text = APP.read_text(encoding="utf-8")
-
-    old_connect = '''    def _connect(self) -> None:\n        self.connect_button.configure(state="disabled")\n        self._set_status("Conectando...")\n\n        def task() -> None:\n            try:\n                protocol = self.client.connect(self._connection_config())\n'''
-    new_connect = '''    def _connect(self) -> None:\n        try:\n            config = self._connection_config()\n        except Exception as exc:\n            messagebox.showerror("Configuración de conexión", str(exc))\n            return\n        self.connect_button.configure(state="disabled")\n        self._set_status("Conectando...")\n\n        def task() -> None:\n            try:\n                protocol = self.client.connect(config)\n'''
-    text = replace_once(text, old_connect, new_connect, "configuración segura de conexión")
-
-    old_report = '''        output = Path(filedialog.asksaveasfilename(\n            title="Guardar informe AUTOGUARD",\n            defaultextension=".pdf",\n            filetypes=[("Documento PDF", "*.pdf")],\n            initialfile=default_report_path().name,\n            initialdir=str(default_report_path().parent),\n        ))\n        if not str(output):\n            return\n'''
-    new_report = '''        raw_output = filedialog.asksaveasfilename(\n            title="Guardar informe AUTOGUARD",\n            defaultextension=".pdf",\n            filetypes=[("Documento PDF", "*.pdf")],\n            initialfile=default_report_path().name,\n            initialdir=str(default_report_path().parent),\n        )\n        if not raw_output:\n            return\n        output = Path(raw_output)\n'''
-    text = replace_once(text, old_report, new_report, "cancelación segura del informe PDF")
-
-    APP.write_text(text, encoding="utf-8", newline="\n")
-    print("Fuente preparada para compilación")
+    required = [
+        ROOT / "app.py", ROOT / "premium_app.py", ROOT / "core.py",
+        ROOT / "dtc_database.py", ROOT / "reporting.py",
+        ROOT / "data" / "autoguard_dtc.sqlite",
+        ROOT / "autoguard.ico", ROOT / "autoguard.png",
+    ]
+    missing = [str(path.name) for path in required if not path.is_file()]
+    if missing:
+        raise RuntimeError(f"Faltan archivos para compilar: {', '.join(missing)}")
+    app_text = (ROOT / "app.py").read_text(encoding="utf-8")
+    premium_text = (ROOT / "premium_app.py").read_text(encoding="utf-8")
+    if "from premium_app import main" not in app_text:
+        raise RuntimeError("app.py no inicia la interfaz Premium")
+    for marker in ("APP_AUTHOR = \"Esteban Cortez Richards\"", "ORANGE = \"#FF7A00\"", "Informe PDF Premium"):
+        if marker not in premium_text:
+            raise RuntimeError(f"No se encontró marcador Premium: {marker}")
+    print("Fuente Premium preparada para compilación Windows")
 
 
 if __name__ == "__main__":

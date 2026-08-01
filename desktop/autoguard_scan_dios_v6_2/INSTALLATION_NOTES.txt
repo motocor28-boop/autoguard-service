@@ -1,21 +1,34 @@
-AUTOGUARD SCAN DIOS v6.2
+AUTOGUARD SCAN DIOS v6.2 PREMIUM
 
 Autor: Esteban Cortez Richards
+Edición: Interfaz profesional grafito y naranja
 
 INSTALACIÓN
-- La aplicación se instala en la carpeta local del usuario.
-- No requiere licencias, activación ni conexión a Internet para funcionar.
-- Incluye desinstalador desde Aplicaciones instaladas y el menú Inicio.
-- Al terminar, se abre directamente el panel principal; no existe pantalla de presentación.
+- La aplicación se instala en la carpeta local del usuario:
+  %LOCALAPPDATA%\Autoguard\Fusion Scanner DIOS v6.2
+- No requiere licencias, activación, bloqueo ni conexión a Internet para funcionar.
+- Incluye acceso directo opcional, menú Inicio y desinstalador de Windows.
+- Al finalizar se abre directamente el panel principal Premium.
+- No utiliza pantalla de presentación bloqueante.
 
 FUNCIONES PRINCIPALES
-- ELM327 por WiFi, COM y simulador.
-- Detección automática de protocolo OBD-II.
-- DTC confirmados, pendientes y permanentes.
-- Base offline ampliada de códigos P, B, C y U.
-- Datos en vivo y flujómetro PID 015E con estimación identificada desde MAF.
-- Osciloscopio de telemetría ECU, pruebas guiadas, consola e informe PDF.
-- Hoja independiente de información y planificación de la aplicación.
+- Conexión ELM327 mediante WiFi, puertos COM y simulador.
+- Inicialización y detección automática del protocolo OBD-II.
+- Consulta de bloques PID 0100, 0120, 0140 y 0160.
+- Lectura de todos los sensores estándar implementados y anunciados por la ECU.
+- Incluye RPM, velocidad, refrigerante, MAF, MAP, carga, trims, presión y nivel de combustible, voltaje, temperaturas, EGR, EVAP, torque y otros PID compatibles.
+- Flujómetro mediante PID 015E; cuando no existe, cálculo alternativo desde MAF claramente marcado como estimado.
+- Lectura de DTC confirmados, pendientes y permanentes.
+- Base SQLite offline ampliada de códigos P, B, C y U.
+- Base offline de soluciones con sistema, severidad, síntomas, causas, herramientas, sensores relacionados, proceso paso a paso y validación posterior.
+- Osciloscopio de telemetría OBD-II con exportación CSV.
+- Pruebas funcionales guiadas y consola técnica ELM327.
+- Informe PDF Premium con datos del vehículo, tabla de DTC, gráficos vectoriales, causas y planes de acción por código.
+- Página independiente de información y planificación.
+- Logo e iconos de alta resolución.
 
-LIMITACIÓN TÉCNICA
-ELM327 entrega datos calculados por la ECU. La forma de onda eléctrica directa de CKP, CMP, inyectores, bobinas, CAN o PWM requiere un osciloscopio físico, sondas adecuadas y procedimientos seguros.
+USO RESPONSABLE
+- Un DTC indica una condición detectada; no confirma por sí solo un componente defectuoso.
+- Antes de reemplazar piezas, verifique alimentación, masa, conectores, cableado, parámetros, condiciones mecánicas y documentación OEM.
+- Las funciones OEM y bidireccionales dependen del vehículo, del adaptador y del protocolo compatible.
+- ELM327 entrega telemetría calculada por la ECU. La forma de onda eléctrica directa de CKP, CMP, inyectores, bobinas, CAN o PWM requiere un osciloscopio físico, sondas adecuadas y procedimientos seguros.
