@@ -1,0 +1,116 @@
+diff -ruN a/mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java b/mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java
+--- a/mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java	2026-07-18 00:37:56.000000000 +0000
++++ b/mobile-scanner/pro-v2/project/app/src/main/java/com/autoguard/mobilepro/MainActivity.java	2026-07-18 01:22:07.448594635 +0000
+@@ -44,6 +44,7 @@
+ import java.util.concurrent.Executors;
+ import java.util.concurrent.ScheduledExecutorService;
+ import java.util.concurrent.TimeUnit;
++import java.util.concurrent.atomic.AtomicBoolean;
+ 
+ public final class MainActivity extends Activity {
+     private static final int REQUEST_BLUETOOTH = 301;
+@@ -89,6 +90,10 @@
+     private Button connectButton;
+     private Button monitorButton;
+     private boolean liveMonitoring;
++    private final AtomicBoolean liveReadBusy = new AtomicBoolean(false);
++    private final Map<String, Long> sensorUpdateTimes = new LinkedHashMap<>();
++    private int liveUpdateCount;
++    private long lastRpmUpdateAt;
+     private LicenseManager.LicenseStatus licenseStatus;
+ 
+     @Override
+@@ -117,7 +122,7 @@
+         header.addView(logo, new LinearLayout.LayoutParams(dp(78), dp(78)));
+         LinearLayout brand = vertical();
+         TextView brandName = text("AUTOGUARD SERVICIOS", 22, ORANGE, true);
+-        TextView product = text("Mobile Scanner Pro v2.0", 15, TEXT, true);
++        TextView product = text("Mobile Scanner Pro v2.1", 15, TEXT, true);
+         TextView subtitle = text("Diagnóstico OBD-II · Datos en vivo · Pruebas guiadas · Informe PDF", 11, MUTED, false);
+         brand.addView(brandName);
+         brand.addView(product);
+@@ -437,12 +442,18 @@
+         if (!requireLicense()) return;
+         List<SensorSpec> selected = selectedSensors();
+         liveStatus.setText("Consultando " + selected.size() + " sensores...");
++        if (!liveReadBusy.compareAndSet(false, true)) {
++            liveStatus.setText("Espere: existe una lectura en curso...");
++            return;
++        }
+         ioExecutor.execute(() -> {
+             try {
+                 Map<String, Double> values = obdClient.readSensors(selected);
+                 mainHandler.post(() -> updateSensorValues(values));
+             } catch (Exception error) {
+                 mainHandler.post(() -> showError("Lectura en vivo: " + safeMessage(error)));
++            } finally {
++                liveReadBusy.set(false);
+             }
+         });
+     }
+@@ -455,15 +466,20 @@
+         if (!ensureConnected() || !requireLicense()) return;
+         liveMonitoring = true;
+         monitorButton.setText("Detener monitoreo");
++        liveUpdateCount = 0;
++        lastRpmUpdateAt = 0L;
+         liveScheduler = Executors.newSingleThreadScheduledExecutor();
+         liveScheduler.scheduleWithFixedDelay(() -> {
++            if (!liveMonitoring || !liveReadBusy.compareAndSet(false, true)) return;
+             try {
+-                Map<String, Double> values = obdClient.readSensors(selectedSensors());
++                Map<String, Double> values = obdClient.readSensorCycle(selectedSensors());
+                 mainHandler.post(() -> updateSensorValues(values));
+             } catch (Exception error) {
+                 mainHandler.post(() -> liveStatus.setText("Error temporal: " + safeMessage(error)));
++            } finally {
++                liveReadBusy.set(false);
+             }
+-        }, 0, 2200, TimeUnit.MILLISECONDS);
++        }, 0, 900, TimeUnit.MILLISECONDS);
+     }
+ 
+     private void stopLiveMonitoring() {
+@@ -484,13 +500,37 @@
+     }
+ 
+     private void updateSensorValues(Map<String, Double> values) {
+-        latestSensors.putAll(values);
++        long now = System.currentTimeMillis();
++        liveUpdateCount++;
+         for (Map.Entry<String, Double> entry : values.entrySet()) {
+-            TextView view = sensorValues.get(entry.getKey());
+-            SensorSpec spec = sensorCatalog.get(entry.getKey());
+-            if (view != null) view.setText(spec == null ? formatVoltage(entry.getValue()) : spec.format(entry.getValue()));
++            String key = entry.getKey();
++            Double value = entry.getValue();
++            TextView view = sensorValues.get(key);
++            SensorSpec spec = sensorCatalog.get(key);
++            if (value != null) {
++                latestSensors.put(key, value);
++                sensorUpdateTimes.put(key, now);
++                if ("rpm".equals(key)) lastRpmUpdateAt = now;
++                if (view != null) view.setText(spec == null ? formatVoltage(value) : spec.format(value));
++            } else if (view != null && "rpm".equals(key)) {
++                view.setText("SIN DATOS");
++            }
+         }
+-        liveStatus.setText("ACTIVO · " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " · " + values.size() + " consultas");
++
++        for (Map.Entry<String, Long> stamp : sensorUpdateTimes.entrySet()) {
++            if (now - stamp.getValue() > 7000L) {
++                TextView view = sensorValues.get(stamp.getKey());
++                if (view != null) view.setText("DESACTUALIZADO");
++            }
++        }
++
++        String rpmState;
++        if (lastRpmUpdateAt == 0L) rpmState = "RPM sin respuesta";
++        else if (now - lastRpmUpdateAt > 3500L) rpmState = "RPM desactualizado";
++        else rpmState = "RPM actualizado";
++        liveStatus.setText("ACTIVO · ciclo #" + liveUpdateCount + " · " +
++                LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) +
++                " · " + rpmState + " · " + values.size() + " PIDs consultados");
+         refreshDashboard();
+     }
+ 
