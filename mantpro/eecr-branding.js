@@ -40,16 +40,18 @@
     const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
     const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
     nodes.forEach(node=>{if(/MANTPRO IA Cloud|MANTPRO IA/i.test(node.nodeValue||''))node.nodeValue=node.nodeValue.replace(/MANTPRO IA Cloud|MANTPRO IA/gi,FULL)});
-    const brand=$('.brand');if(brand)brand.innerHTML='<b>SUPERVISIÓN <i>EECR</i></b><small>Remota</small>';
-    const authTitle=$('#auth-overlay h1');if(authTitle)authTitle.textContent=`Ingresar al ${FULL}`;
-    document.title=FULL;
+    const brand=$('.brand');
+    if(brand&&brand.dataset.eecrBrand!=='1'){brand.dataset.eecrBrand='1';brand.innerHTML='<b>SUPERVISIÓN <i>EECR</i></b><small>Remota</small>'}
+    const authTitle=$('#auth-overlay h1');
+    if(authTitle&&authTitle.textContent!==`Ingresar al ${FULL}`)authTitle.textContent=`Ingresar al ${FULL}`;
+    if(document.title!==FULL)document.title=FULL;
   }
   function previewIdentifier(){
     const sheet=$('.report-sheet');if(!sheet)return;
     const code=sessionStorage.getItem('eecr-report-code')||reportContext(sheet.querySelector('[data-pdf-job],[data-pdf-daily]')).code;
     let tag=$('.eecr-report-id',sheet);
     if(!tag){tag=document.createElement('p');tag.className='eecr-report-id';const h1=sheet.querySelector('h1');h1?.insertAdjacentElement('afterend',tag)}
-    if(tag)tag.innerHTML=`<b>Registro:</b> ${code}`;
+    if(tag&&tag.dataset.code!==code){tag.dataset.code=code;tag.innerHTML=`<b>Registro:</b> ${code}`}
   }
   function patchJsPdf(){
     const API=window.jspdf?.jsPDF?.API;if(!API||API.__eecrPatched)return false;
