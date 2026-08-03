@@ -4,28 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#12171c">
-  <meta name="description" content="Gestión móvil de mantención, seguridad e informes técnicos de planta.">
+  <meta name="description" content="Sistema remoto para supervisión de mantención, seguridad, evidencias e informes técnicos.">
   <link rel="icon" href="../logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/autoguard-menu-premium.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?build=20260802-simpleui">
-  <link rel="stylesheet" href="manual-fields.css?build=20260802-simpleui">
-  <link rel="stylesheet" href="photo-report-fix.css?build=20260802-simpleui">
-  <link rel="stylesheet" href="photo-report-groups.css?build=20260802-simpleui">
-  <link rel="stylesheet" href="mobile-photo-stages.css?build=20260802-simpleui">
-  <link rel="stylesheet" href="photo-descriptions.css?build=20260802-simpleui">
-  <link rel="stylesheet" href="danger-delete-records.css?build=20260802-simpleui">
-  <link rel="stylesheet" href="ai-assistant.css?build=20260802-simpleui">
-  <link rel="stylesheet" href="mobile-simple-ui.css?build=20260802-simpleui">
-  <title>MANTPRO IA Cloud</title>
+  <link rel="stylesheet" href="styles.css?build=20260802-eecrdemo">
+  <link rel="stylesheet" href="manual-fields.css?build=20260802-eecrdemo">
+  <link rel="stylesheet" href="photo-report-fix.css?build=20260802-eecrdemo">
+  <link rel="stylesheet" href="photo-report-groups.css?build=20260802-eecrdemo">
+  <link rel="stylesheet" href="mobile-photo-stages.css?build=20260802-eecrdemo">
+  <link rel="stylesheet" href="photo-descriptions.css?build=20260802-eecrdemo">
+  <link rel="stylesheet" href="danger-delete-records.css?build=20260802-eecrdemo">
+  <link rel="stylesheet" href="ai-assistant.css?build=20260802-eecrdemo">
+  <link rel="stylesheet" href="mobile-simple-ui.css?build=20260802-eecrdemo">
+  <link rel="stylesheet" href="eecr-branding.css?build=20260802-eecrdemo">
+  <title>SISTEMA DE SUPERVISIÓN REMOTO EECR</title>
 </head>
 <body>
   <header class="topbar">
     <button id="back" class="icon-button" aria-label="Volver" hidden>‹</button>
-    <div class="brand"><b>MANTPRO <i>IA</i></b><small>Cloud</small></div>
+    <div class="brand"><b>SUPERVISIÓN <i>EECR</i></b><small>Remota</small></div>
     <button id="state" class="sync-state" aria-label="Estado de sincronización">Preparando</button>
   </header>
-  <a class="install-guide-link" href="instalar.html" aria-label="Ver guía para instalar MANTPRO en computador o teléfono">Instalar en computador o teléfono</a>
+  <a class="install-guide-link" href="instalar.html" aria-label="Ver guía de instalación del Sistema de Supervisión Remoto EECR">Instalar en computador o teléfono</a>
   <main id="app" aria-live="polite"></main>
   <nav id="nav" class="bottom-nav" aria-label="Navegación principal">
     <button data-route="home"><b>⌂</b><span>Inicio</span></button>
@@ -37,17 +38,19 @@
   <input id="photo" type="file" accept="image/*" capture="environment" hidden>
   <input id="restore-file" type="file" accept="application/json,.json" hidden>
   <div id="toast" class="toast" role="status" hidden></div>
-  <script src="config.js?build=20260802-simpleui"></script>
-  <script src="auth.js?build=20260802-simpleui"></script>
-  <script src="jspdf.umd.min.js?build=20260802-simpleui"></script>
-  <script src="report-dom-guard.js?build=20260802-simpleui"></script>
-  <script src="photo-report-groups.js?build=20260802-simpleui"></script>
-  <script src="photo-report-stages.js?build=20260802-simpleui"></script>
-  <script src="app.js?build=20260802-simpleui"></script>
-  <script src="mobile-photo-core.js?build=20260802-simpleui"></script>
-  <script src="mobile-photo-descriptions.js?build=20260802-simpleui"></script>
-  <script src="danger-delete-records.js?build=20260802-simpleui"></script>
-  <script src="ai-assistant.js?build=20260802-simpleui"></script>
-  <script src="mobile-simple-ui.js?build=20260802-simpleui"></script>
+  <script src="config.js?build=20260802-eecrdemo"></script>
+  <script src="auth.js?build=20260802-eecrdemo"></script>
+  <script src="jspdf.umd.min.js?build=20260802-eecrdemo"></script>
+  <script src="report-dom-guard.js?build=20260802-eecrdemo"></script>
+  <script src="photo-report-groups.js?build=20260802-eecrdemo"></script>
+  <script src="photo-report-stages.js?build=20260802-eecrdemo"></script>
+  <script src="app.js?build=20260802-eecrdemo"></script>
+  <script src="mobile-photo-core.js?build=20260802-eecrdemo"></script>
+  <script src="mobile-photo-descriptions.js?build=20260802-eecrdemo"></script>
+  <script src="danger-delete-records.js?build=20260802-eecrdemo"></script>
+  <script src="ai-assistant.js?build=20260802-eecrdemo"></script>
+  <script src="mobile-simple-ui.js?build=20260802-eecrdemo"></script>
+  <script src="eecr-branding.js?build=20260802-eecrdemo"></script>
+  <script src="demo-six-examples.js?build=20260802-eecrdemo"></script>
 </body>
 </html>
