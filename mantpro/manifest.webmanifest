@@ -1,7 +1,7 @@
 {
-  "name":"MANTPRO IA Cloud",
-  "short_name":"MANTPRO IA",
-  "description":"Gestión móvil de mantención, seguridad e informes técnicos de planta.",
+  "name":"SISTEMA DE SUPERVISIÓN REMOTO EECR",
+  "short_name":"SUPERVISIÓN EECR",
+  "description":"Supervisión remota de mantención, seguridad, fotografías e informes técnicos.",
   "id":"./",
   "start_url":"./",
   "scope":"./",
@@ -15,4 +15,3 @@
     {"src":"../logo.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
   ]
 }
-
