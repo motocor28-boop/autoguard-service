@@ -3,7 +3,7 @@
   "short_name":"SUPERVISIÓN EECR",
   "description":"Supervisión remota de mantención, seguridad, fotografías e informes técnicos.",
   "id":"./",
-  "start_url":"./",
+  "start_url":"./index.html?build=20260804-mobile-preview-v3",
   "scope":"./",
   "display":"standalone",
   "orientation":"any",
