@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="theme-color" content="#12171c">
+  <title>Actualizar MANTPRO móvil</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:#0d1216;color:#eef3f6;font-family:Arial,sans-serif;display:grid;place-items:center;padding:24px}.card{width:min(100%,520px);background:#182128;border:1px solid #34434d;border-radius:22px;padding:28px;box-shadow:0 18px 50px #0008}.mark{color:#ff8b18;font-weight:900;letter-spacing:.08em}.card h1{font-size:26px;margin:10px 0}.card p{color:#c4d0d6;line-height:1.55}.state{margin-top:20px;padding:15px;border-radius:13px;background:#10171c;border:1px solid #33444f;font-weight:700}.ok{color:#72d69a}.error{color:#ff9a9a}button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:12px;background:#ff8b18;color:#111;font-weight:900;font-size:16px}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="mark">SUPERVISIÓN EECR</div>
+    <h1>Actualizando MANTPRO móvil</h1>
+    <p>Se limpiará únicamente la memoria caché de la aplicación. Las caminatas, órdenes, fotografías y demás registros no serán borrados.</p>
+    <div id="state" class="state">Preparando actualización…</div>
+    <button id="retry" hidden>Reintentar actualización</button>
+  </main>
+  <script>
+    (()=>{
+      'use strict';
+      const BUILD='20260804-mobile-preview-v3';
+      const state=document.getElementById('state');
+      const retry=document.getElementById('retry');
+      const say=(text,kind='')=>{state.textContent=text;state.className='state '+kind};
+      async function run(){
+        retry.hidden=true;
+        try{
+          say('Eliminando cachés anteriores…');
+          if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(key=>caches.delete(key)))}
+          say('Desactivando la versión anterior…');
+          if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()))}
+          say('Instalando la versión nueva…');
+          if('serviceWorker'in navigator){
+            const reg=await navigator.serviceWorker.register(`sw.js?build=${BUILD}`,{scope:'./',updateViaCache:'none'});
+            await reg.update();
+            if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
+            await navigator.serviceWorker.ready;
+          }
+          localStorage.setItem('eecr-pwa-build',BUILD);
+          say('Actualización completada. Abriendo MANTPRO…','ok');
+          setTimeout(()=>location.replace(`./index.html?build=${BUILD}&actualizado=${Date.now()}`),1200);
+        }catch(error){
+          console.error(error);
+          say('No se pudo completar la actualización. Comprueba la conexión y pulsa Reintentar.','error');
+          retry.hidden=false;
+        }
+      }
+      retry.addEventListener('click',run);
+      run();
+    })();
+  </script>
+</body>
+</html>
