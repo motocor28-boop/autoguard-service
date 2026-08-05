@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
@@ -62,7 +63,12 @@ public final class MainActivity extends Activity {
             }
         }
 
-        if (!asksAudio || !APP_ORIGIN.equals(request.getOrigin().toString())) {
+        Uri origin = request.getOrigin();
+        boolean trustedOrigin = origin != null
+            && "https".equals(origin.getScheme())
+            && "nexo.local".equals(origin.getHost());
+
+        if (!asksAudio || !trustedOrigin) {
             request.deny();
             return;
         }
