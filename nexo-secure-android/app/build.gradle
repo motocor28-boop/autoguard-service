@@ -7,14 +7,19 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId 'cl.nexosecure.demo'
-        minSdk 26
+        // Identificador nuevo para evitar conflictos de firma con instalaciones anteriores.
+        applicationId 'cl.nexosecure.compat.v03'
+        minSdk 23
         targetSdk 35
-        versionCode 2
-        versionName '0.2-test'
+        versionCode 3
+        versionName '0.3-compat-test'
     }
 
     buildTypes {
+        debug {
+            // La compilación debug queda firmada automáticamente por Gradle.
+            minifyEnabled false
+        }
         release {
             minifyEnabled false
         }
