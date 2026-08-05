@@ -1,0 +1,43 @@
+name: Build Nexo Secure Android Test APK
+
+on:
+  push:
+    branches: [nexo-secure-android]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nexo-secure-android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build debug APK
+        run: gradle --no-daemon assembleDebug
+
+      - name: Prepare artifact
+        run: cp app/build/outputs/apk/debug/app-debug.apk NexoSecure-Demo-Android-v0.2.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NexoSecure-Demo-Android-v0.2
+          path: nexo-secure-android/NexoSecure-Demo-Android-v0.2.apk
+          if-no-files-found: error
