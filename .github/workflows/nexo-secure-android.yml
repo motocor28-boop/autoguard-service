@@ -1,8 +1,11 @@
-name: Build Nexo Secure Android Test APK
+name: Build Nexo Secure Alpha MultiPhone APK
 
 on:
   push:
-    branches: [nexo-secure-android]
+    branches: [nexo-secure-commercial-v1]
+    paths:
+      - 'nexo-secure-android/**'
+      - '.github/workflows/nexo-secure-android.yml'
   workflow_dispatch:
 
 permissions:
@@ -33,11 +36,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Prepare artifact
-        run: cp app/build/outputs/apk/debug/app-debug.apk NexoSecure-Demo-Android-v0.2.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk NexoSecure-Alpha-MultiPhone-v1.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexoSecure-Demo-Android-v0.2
-          path: nexo-secure-android/NexoSecure-Demo-Android-v0.2.apk
+          name: NexoSecure-Alpha-MultiPhone-v1
+          path: nexo-secure-android/NexoSecure-Alpha-MultiPhone-v1.apk
           if-no-files-found: error
