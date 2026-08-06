@@ -15,6 +15,21 @@ class DTCRecord:
     source: str
 
 
+@dataclass(slots=True)
+class DTCSolution:
+    code: str
+    manufacturer: str
+    system: str
+    severity: str
+    symptoms: str
+    causes: str
+    steps: str
+    validation: str
+    sensors: str
+    tools: str
+    source: str
+
+
 SPANISH_OVERRIDES = {
     "U0123": "Pérdida de comunicación con el módulo del sensor de velocidad de guiñada",
     "P0100": "Falla en el circuito del sensor de flujo de aire MAF",
@@ -69,6 +84,15 @@ class DtcDatabase:
             source=row["source"],
         )
 
+    @staticmethod
+    def _solution(row: sqlite3.Row) -> DTCSolution:
+        return DTCSolution(
+            code=row["code"], manufacturer=row["manufacturer"], system=row["system"],
+            severity=row["severity"], symptoms=row["symptoms"], causes=row["causes"],
+            steps=row["steps"], validation=row["validation"], sensors=row["sensors"],
+            tools=row["tools"], source=row["source"],
+        )
+
     def lookup(self, code: str, manufacturer: str | None = None) -> list[DTCRecord]:
         code = code.strip().upper().replace(" ", "")
         if not code:
@@ -76,21 +100,15 @@ class DtcDatabase:
         with self._connect() as connection:
             if manufacturer and manufacturer.lower() not in {"", "genérico", "generico", "todos"}:
                 rows = connection.execute(
-                    """
-                    SELECT code, description, manufacturer, is_generic, source
-                    FROM dtc
-                    WHERE code = ? AND (manufacturer = ? OR is_generic = 1)
-                    ORDER BY is_generic DESC, manufacturer
-                    """,
+                    """SELECT code, description, manufacturer, is_generic, source
+                    FROM dtc WHERE code = ? AND (manufacturer = ? OR is_generic = 1)
+                    ORDER BY is_generic DESC, manufacturer""",
                     (code, manufacturer),
                 ).fetchall()
             else:
                 rows = connection.execute(
-                    """
-                    SELECT code, description, manufacturer, is_generic, source
-                    FROM dtc WHERE code = ?
-                    ORDER BY is_generic DESC, manufacturer
-                    """,
+                    """SELECT code, description, manufacturer, is_generic, source
+                    FROM dtc WHERE code = ? ORDER BY is_generic DESC, manufacturer""",
                     (code,),
                 ).fetchall()
         return [self._record(row) for row in rows]
@@ -106,15 +124,35 @@ class DtcDatabase:
         params.append(max(1, min(limit, 1000)))
         with self._connect() as connection:
             rows = connection.execute(
-                f"""
-                SELECT code, description, manufacturer, is_generic, source
+                f"""SELECT code, description, manufacturer, is_generic, source
                 FROM dtc WHERE {condition}
-                ORDER BY code, is_generic DESC, manufacturer
-                LIMIT ?
-                """,
+                ORDER BY code, is_generic DESC, manufacturer LIMIT ?""",
                 params,
             ).fetchall()
         return [self._record(row) for row in rows]
+
+    def solution(self, code: str, manufacturer: str | None = None) -> DTCSolution | None:
+        code = code.strip().upper().replace(" ", "")
+        if not code:
+            return None
+        with self._connect() as connection:
+            if manufacturer and manufacturer.lower() not in {"", "todos", "sae/iso", "genérico", "generico"}:
+                row = connection.execute(
+                    """SELECT * FROM solutions WHERE code = ? AND manufacturer = ? LIMIT 1""",
+                    (code, manufacturer),
+                ).fetchone()
+                if row is None:
+                    row = connection.execute(
+                        """SELECT * FROM solutions WHERE code = ? AND manufacturer = 'SAE/ISO' LIMIT 1""",
+                        (code,),
+                    ).fetchone()
+            else:
+                row = connection.execute(
+                    """SELECT * FROM solutions WHERE code = ?
+                    ORDER BY CASE WHEN manufacturer='SAE/ISO' THEN 0 ELSE 1 END, manufacturer LIMIT 1""",
+                    (code,),
+                ).fetchone()
+        return self._solution(row) if row else None
 
     def manufacturers(self) -> list[str]:
         with self._connect() as connection:
@@ -130,8 +168,11 @@ class DtcDatabase:
             manufacturers = connection.execute(
                 "SELECT COUNT(DISTINCT manufacturer) FROM dtc WHERE is_generic = 0"
             ).fetchone()[0]
+            try:
+                solutions = connection.execute("SELECT COUNT(*) FROM solutions").fetchone()[0]
+            except sqlite3.OperationalError:
+                solutions = 0
         return {
-            "definitions": int(definitions),
-            "unique_codes": int(unique_codes),
-            "manufacturers": int(manufacturers),
+            "definitions": int(definitions), "unique_codes": int(unique_codes),
+            "manufacturers": int(manufacturers), "solutions": int(solutions),
         }
