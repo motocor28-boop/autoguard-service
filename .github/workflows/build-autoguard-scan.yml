@@ -1,7 +1,14 @@
-name: Build AUTOGUARD SCAN DIOS v6.2
+name: Build AUTOGUARD SCAN DIOS v6.2 NIVEL DIOS PREMIUM
 
 on:
   push:
+    branches:
+      - main
+      - autoguard-v6-2-final-premium-clean-build
+    paths:
+      - "desktop/autoguard_scan_dios_v6_2/**"
+      - ".github/workflows/build-autoguard-scan.yml"
+  pull_request:
     branches:
       - main
     paths:
@@ -16,7 +23,7 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 65
     defaults:
       run:
         working-directory: desktop/autoguard_scan_dios_v6_2
@@ -37,20 +44,99 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Generar base DTC offline
+      - name: Generar base DTC y soluciones offline
         run: python build_dtc_db.py
 
-      - name: Generar icono
+      - name: Generar branding AUTO GUARD SERVICE e icono
         run: python make_icon.py
 
-      - name: Preparar fuente para Windows
+      - name: Preparar fuente Nivel Dios Premium
         run: python prepare_build.py
 
-      - name: Validar sintaxis
-        run: python -m compileall -q app.py core.py dtc_database.py reporting.py build_dtc_db.py make_icon.py prepare_build.py
+      - name: Validar sintaxis e importación
+        run: |
+          python -m compileall -q app.py final_launcher.py god_premium_app.py premium_gauges.py final_dios_app.py final_widgets.py option_b_app.py premium_app.py deep_scan.py deep_scan_full.py diagnostic_parsers.py core.py dtc_database.py reporting.py build_dtc_db.py make_icon.py prepare_build.py
+          python -c "import app; import final_launcher; import god_premium_app; import premium_gauges; import deep_scan_full; print('Importación NIVEL DIOS PREMIUM correcta')"
 
       - name: Ejecutar pruebas automáticas
         run: python -m pytest -q
+
+      - name: Validar base offline Premium
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          @'
+          import sqlite3
+          from pathlib import Path
+          path = Path("data/autoguard_dtc.sqlite")
+          with sqlite3.connect(path) as db:
+              unique_codes = db.execute("SELECT COUNT(DISTINCT code) FROM dtc").fetchone()[0]
+              definitions = db.execute("SELECT COUNT(*) FROM dtc").fetchone()[0]
+              solutions = db.execute("SELECT COUNT(*) FROM solutions").fetchone()[0]
+              manufacturers = db.execute("SELECT COUNT(DISTINCT manufacturer) FROM dtc WHERE is_generic=0").fetchone()[0]
+              u0123 = db.execute("SELECT COUNT(*) FROM solutions WHERE code='U0123'").fetchone()[0]
+              integrity = db.execute("PRAGMA integrity_check").fetchone()[0]
+          assert unique_codes >= 10000, unique_codes
+          assert definitions >= unique_codes, (definitions, unique_codes)
+          assert solutions >= unique_codes, (solutions, unique_codes)
+          assert manufacturers >= 20, manufacturers
+          assert u0123 > 0
+          assert integrity == "ok", integrity
+          print(f"DTC únicos: {unique_codes}; definiciones: {definitions}; soluciones: {solutions}; fabricantes: {manufacturers}")
+          '@ | python -
+
+      - name: Validar motor de escaneo profundo
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          @'
+          import deep_scan
+          from diagnostic_parsers import decode_printable, extract_after_marker, parse_uds_ascii, parse_uds_dtcs
+          deep_scan._extract_after_marker = extract_after_marker
+          deep_scan._decode_printable = decode_printable
+          deep_scan.parse_uds_ascii = parse_uds_ascii
+          deep_scan.parse_uds_dtcs = parse_uds_dtcs
+          from deep_scan import discover_headers, parse_readiness
+          from deep_scan_full import DeepScannerFull
+          assert discover_headers("7E8 06 41 00 BE 3F A8 13\r>")
+          readiness = parse_readiness("41 01 82 07 E8 00 >")
+          assert readiness["mil_encendida"] is True
+          assert parse_uds_dtcs("59 02 FF 01 23 45 08 >")
+          assert DeepScannerFull is not None
+          print("Motor Deep Scan y parser ISO-TP validados")
+          '@ | python -
+
+      - name: Validar interfaz limpia, relojes y códigos
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          @'
+          from pathlib import Path
+          from PIL import Image
+          from god_premium_app import GOD_VERSION, GodPremiumApp, ScanDisplayRecord
+          from premium_gauges import RealisticGauge
+          from final_widgets import MultiTraceCanvas, SensorDetailWindow
+          assert "NIVEL DIOS PREMIUM" in GOD_VERSION
+          assert GodPremiumApp is not None
+          assert ScanDisplayRecord is not None
+          assert RealisticGauge is not None
+          assert MultiTraceCanvas is not None
+          assert SensorDetailWindow is not None
+          source = Path("god_premium_app.py").read_text(encoding="utf-8")
+          for marker in (
+              "Osciloscopio ECU",
+              "Escaneo y códigos",
+              "Sin códigos activos",
+              "CÓDIGOS BORRADOS DURANTE LA SESIÓN",
+              "Borrado confirmado por ECU",
+          ):
+              assert marker in source, marker
+          logo = Image.open("autoguard.png")
+          icon = Image.open("autoguard_icon.png")
+          assert logo.width >= 1200 and logo.height >= 700, logo.size
+          assert icon.size == (1024, 1024), icon.size
+          print("Interfaz limpia, relojes, escaneo, historial y branding validados")
+          '@ | python -
 
       - name: Compilar aplicación onedir
         run: pyinstaller --clean --noconfirm autoguard_scan.spec
@@ -61,32 +147,40 @@ jobs:
           $ErrorActionPreference = "Stop"
           $exe = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\AUTOGUARD_SCAN_DIOS_v6.2.exe"
           $db = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\_internal\data\autoguard_dtc.sqlite"
+          $logo = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\_internal\autoguard.png"
           if (!(Test-Path $exe)) { throw "No se generó el ejecutable principal" }
           if (!(Test-Path $db)) {
             $db = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\data\autoguard_dtc.sqlite"
           }
-          if (!(Test-Path $db)) { throw "No se incorporó la base DTC" }
+          if (!(Test-Path $logo)) {
+            $logo = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\autoguard.png"
+          }
+          if (!(Test-Path $db)) { throw "No se incorporó la base DTC y soluciones" }
+          if (!(Test-Path $logo)) { throw "No se incorporó el branding AUTO GUARD SERVICE" }
           Write-Host "Ejecutable: $exe"
           Write-Host "Base DTC: $db"
+          Write-Host "Logo: $logo"
 
-      - name: Prueba de apertura del panel principal
+      - name: Prueba de apertura Nivel Dios Premium
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
           $exe = Join-Path $PWD "dist\AUTOGUARD_SCAN_DIOS_v6.2\AUTOGUARD_SCAN_DIOS_v6.2.exe"
           $process = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -PassThru
-          Start-Sleep -Seconds 10
+          Start-Sleep -Seconds 18
           if ($process.HasExited) {
+            $log = Join-Path $env:LOCALAPPDATA "Autoguard\logs\AUTOGUARD_NIVEL_DIOS_PREMIUM_INICIO_ERROR.log"
+            if (Test-Path $log) { Get-Content $log }
             throw "La aplicación se cerró durante la prueba de inicio. Código: $($process.ExitCode)"
           }
           Stop-Process -Id $process.Id -Force
-          Write-Host "El panel principal permaneció activo durante la prueba."
+          Write-Host "La interfaz Nivel Dios Premium permaneció activa durante 18 segundos."
 
       - name: Instalar Inno Setup
         shell: pwsh
         run: choco install innosetup --no-progress -y
 
-      - name: Compilar instalador
+      - name: Compilar instalador final Premium
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -94,33 +188,50 @@ jobs:
           if (!(Test-Path $iscc)) { throw "No se encontró Inno Setup 6" }
           & $iscc "installer.iss"
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup terminó con error $LASTEXITCODE" }
+          $setup = "output\AUTOGUARD_SCAN_DIOS_v6.2_NIVEL_DIOS_PREMIUM_Setup.exe"
+          if (!(Test-Path $setup)) { throw "No se generó el Setup Nivel Dios Premium" }
 
-      - name: Crear paquete portátil y hashes
+      - name: Crear portable, manifiesto y hashes
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
           New-Item -ItemType Directory -Force -Path "output" | Out-Null
-          $portable = "output\AUTOGUARD_SCAN_DIOS_v6.2_PORTABLE.zip"
+          $portable = "output\AUTOGUARD_SCAN_DIOS_v6.2_NIVEL_DIOS_PREMIUM_PORTABLE.zip"
           if (Test-Path $portable) { Remove-Item $portable -Force }
           Compress-Archive -Path "dist\AUTOGUARD_SCAN_DIOS_v6.2\*" -DestinationPath $portable -CompressionLevel Optimal
-          $setup = "output\AUTOGUARD_SCAN_DIOS_v6.2_Setup.exe"
-          if (!(Test-Path $setup)) { throw "No se generó el Setup.exe" }
+          $setup = "output\AUTOGUARD_SCAN_DIOS_v6.2_NIVEL_DIOS_PREMIUM_Setup.exe"
           $setupHash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
           $portableHash = (Get-FileHash $portable -Algorithm SHA256).Hash.ToLower()
           @(
-            "$setupHash  AUTOGUARD_SCAN_DIOS_v6.2_Setup.exe",
-            "$portableHash  AUTOGUARD_SCAN_DIOS_v6.2_PORTABLE.zip"
+            "$setupHash  AUTOGUARD_SCAN_DIOS_v6.2_NIVEL_DIOS_PREMIUM_Setup.exe",
+            "$portableHash  AUTOGUARD_SCAN_DIOS_v6.2_NIVEL_DIOS_PREMIUM_PORTABLE.zip"
           ) | Set-Content -Path "output\SHA256.txt" -Encoding ascii
           Copy-Item "INSTALLATION_NOTES.txt" "output\NOTAS_DE_INSTALACION.txt" -Force
+          Copy-Item "autoguard.png" "output\LOGO_AUTO_GUARD_SERVICE.png" -Force
+          @(
+            "AUTOGUARD SCAN DIOS v6.2.1 NIVEL DIOS PREMIUM",
+            "Autor: Esteban Cortez Richards",
+            "Branding: AUTO GUARD SERVICE - Tu vehículo, nuestra prioridad",
+            "Interfaz: limpia, grafito/naranja, escalado DPI y Full HD",
+            "Relojes: bisel metálico, escala despejada y lectura digital grande",
+            "Códigos: solo encontrados, estado Sin códigos activos e historial de borrado",
+            "Osciloscopio: página ECU multicanal y ventanas individuales por sensor",
+            "Escaneo: OBD-II completo publicado, Mode 02/05/06/09, DTC 03/07/0A y UDS de solo lectura",
+            "Base: DTC P/B/C/U, descripciones y soluciones offline paso a paso",
+            "Informe: PDF Premium con gráficos, causas, procedimientos y validación",
+            "Build: $env:GITHUB_SHA"
+          ) | Set-Content -Path "output\MANIFIESTO.txt" -Encoding utf8
 
-      - name: Publicar instalador y portable
+      - name: Publicar instalador y portable final
         uses: actions/upload-artifact@v4
         with:
-          name: AUTOGUARD_SCAN_DIOS_v6.2_WINDOWS
+          name: AUTOGUARD_SCAN_DIOS_v6.2_NIVEL_DIOS_PREMIUM_WINDOWS
           path: |
-            desktop/autoguard_scan_dios_v6_2/output/AUTOGUARD_SCAN_DIOS_v6.2_Setup.exe
-            desktop/autoguard_scan_dios_v6_2/output/AUTOGUARD_SCAN_DIOS_v6.2_PORTABLE.zip
+            desktop/autoguard_scan_dios_v6_2/output/AUTOGUARD_SCAN_DIOS_v6.2_NIVEL_DIOS_PREMIUM_Setup.exe
+            desktop/autoguard_scan_dios_v6_2/output/AUTOGUARD_SCAN_DIOS_v6.2_NIVEL_DIOS_PREMIUM_PORTABLE.zip
             desktop/autoguard_scan_dios_v6_2/output/SHA256.txt
             desktop/autoguard_scan_dios_v6_2/output/NOTAS_DE_INSTALACION.txt
+            desktop/autoguard_scan_dios_v6_2/output/MANIFIESTO.txt
+            desktop/autoguard_scan_dios_v6_2/output/LOGO_AUTO_GUARD_SERVICE.png
           if-no-files-found: error
           retention-days: 30
