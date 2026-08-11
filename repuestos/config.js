@@ -1,5 +1,5 @@
 window.REPUESTOS_CONFIG={
-  version:'3.0.0',
+  version:'3.1.0',
   supabaseUrl:'https://gecrjlkfrcrlsjhanfjz.supabase.co',
   supabaseAnonKey:'sb_publishable_bJlPZe-8xMdmvnVNkInSLg_phBKSoaa',
   table:'mantpro_records',
@@ -8,5 +8,5 @@ window.REPUESTOS_CONFIG={
   username:'esteban',
   supervisor:'Esteban Cortez Richards',
   requireAuth:true,
-  appTitle:'REPUESTOS IA · LEVANTAMIENTO CLOUD'
+  appTitle:'LEVANTAMIENTO DE REPUESTOS IA CLOUD'
 };
