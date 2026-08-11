@@ -1,5 +1,5 @@
 window.REPUESTOS_CONFIG={
-  version:'3.1.0',
+  version:'3.1.1',
   supabaseUrl:'https://gecrjlkfrcrlsjhanfjz.supabase.co',
   supabaseAnonKey:'sb_publishable_bJlPZe-8xMdmvnVNkInSLg_phBKSoaa',
   table:'mantpro_records',
