@@ -3,36 +3,133 @@ from __future__ import annotations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-APP = ROOT / "app.py"
 
 
-def replace_once(text: str, old: str, new: str, label: str) -> str:
-    count = text.count(old)
-    if count == 0:
-        # Permite builds repetidos cuando el parche ya fue aplicado.
-        if new in text:
-            print(f"{label}: ya aplicado")
-            return text
-        raise RuntimeError(f"No se encontró el bloque requerido: {label}")
-    if count != 1:
-        raise RuntimeError(f"El bloque {label} aparece {count} veces")
-    print(f"{label}: aplicado")
-    return text.replace(old, new, 1)
+def require_markers(path: Path, markers: tuple[str, ...], label: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    for marker in markers:
+        if marker not in text:
+            raise RuntimeError(f"{label}: falta marcador {marker}")
+
+
+def require_absent(path: Path, markers: tuple[str, ...], label: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    for marker in markers:
+        if marker in text:
+            raise RuntimeError(f"{label}: marcador no permitido {marker}")
 
 
 def main() -> None:
-    text = APP.read_text(encoding="utf-8")
+    required = [
+        ROOT / "app.py",
+        ROOT / "final_launcher.py",
+        ROOT / "navigation_premium_app.py",
+        ROOT / "god_premium_app.py",
+        ROOT / "premium_gauges.py",
+        ROOT / "final_dios_app.py",
+        ROOT / "final_widgets.py",
+        ROOT / "option_b_app.py",
+        ROOT / "premium_app.py",
+        ROOT / "deep_scan.py",
+        ROOT / "deep_scan_full.py",
+        ROOT / "diagnostic_parsers.py",
+        ROOT / "core.py",
+        ROOT / "dtc_database.py",
+        ROOT / "reporting.py",
+        ROOT / "data" / "autoguard_dtc.sqlite",
+        ROOT / "autoguard.ico",
+        ROOT / "autoguard.png",
+        ROOT / "autoguard_icon.png",
+    ]
+    missing = [path.name for path in required if not path.is_file()]
+    if missing:
+        raise RuntimeError(f"Faltan archivos para compilar: {', '.join(missing)}")
 
-    old_connect = '''    def _connect(self) -> None:\n        self.connect_button.configure(state="disabled")\n        self._set_status("Conectando...")\n\n        def task() -> None:\n            try:\n                protocol = self.client.connect(self._connection_config())\n'''
-    new_connect = '''    def _connect(self) -> None:\n        try:\n            config = self._connection_config()\n        except Exception as exc:\n            messagebox.showerror("Configuración de conexión", str(exc))\n            return\n        self.connect_button.configure(state="disabled")\n        self._set_status("Conectando...")\n\n        def task() -> None:\n            try:\n                protocol = self.client.connect(config)\n'''
-    text = replace_once(text, old_connect, new_connect, "configuración segura de conexión")
-
-    old_report = '''        output = Path(filedialog.asksaveasfilename(\n            title="Guardar informe AUTOGUARD",\n            defaultextension=".pdf",\n            filetypes=[("Documento PDF", "*.pdf")],\n            initialfile=default_report_path().name,\n            initialdir=str(default_report_path().parent),\n        ))\n        if not str(output):\n            return\n'''
-    new_report = '''        raw_output = filedialog.asksaveasfilename(\n            title="Guardar informe AUTOGUARD",\n            defaultextension=".pdf",\n            filetypes=[("Documento PDF", "*.pdf")],\n            initialfile=default_report_path().name,\n            initialdir=str(default_report_path().parent),\n        )\n        if not raw_output:\n            return\n        output = Path(raw_output)\n'''
-    text = replace_once(text, old_report, new_report, "cancelación segura del informe PDF")
-
-    APP.write_text(text, encoding="utf-8", newline="\n")
-    print("Fuente preparada para compilación")
+    require_markers(ROOT / "app.py", ("from final_launcher import main", "diagnostic_parsers"), "Arranque final")
+    require_markers(
+        ROOT / "final_launcher.py",
+        ("NavigationPremiumApp", "NAV_VERSION", "enable_windows_dpi_awareness"),
+        "Lanzador final",
+    )
+    require_markers(
+        ROOT / "navigation_premium_app.py",
+        (
+            "6.2.2 NIVEL DIOS PREMIUM",
+            "MENÚ PRINCIPAL",
+            "Sensores por sistema",
+            "MODO ESCÁNER",
+            "SALIR PANTALLA COMPLETA",
+            "DATOS DEL VEHÍCULO",
+            "class NavigationPremiumApp",
+        ),
+        "Navegación separada",
+    )
+    require_markers(
+        ROOT / "god_premium_app.py",
+        (
+            "Osciloscopio ECU",
+            "Escaneo y códigos",
+            "Sin códigos activos",
+            "CÓDIGOS BORRADOS DURANTE LA SESIÓN",
+            "Borrado confirmado por ECU",
+        ),
+        "Diagnóstico limpio Nivel Dios",
+    )
+    require_markers(
+        ROOT / "premium_gauges.py",
+        ("class RealisticGauge", "Dedicated digital display", "41 clean ticks"),
+        "Relojes realistas",
+    )
+    require_markers(
+        ROOT / "final_dios_app.py",
+        ("SENSOR_SYSTEMS", "SensorDetailWindow", "MultiTraceCanvas", "Exportar gráfica"),
+        "Base de interfaz Full HD",
+    )
+    require_markers(
+        ROOT / "final_widgets.py",
+        ("enable_windows_dpi_awareness", "class MultiTraceCanvas", "class SensorDetailWindow"),
+        "Widgets HD",
+    )
+    require_markers(
+        ROOT / "deep_scan.py",
+        ("class DeepScanner", "22F190", "1902FF", "MODE06"),
+        "Escaneo profundo",
+    )
+    require_markers(
+        ROOT / "deep_scan_full.py",
+        ("class DeepScannerFull", "PID_RAW_", "MODE09_RAW_", "FREEZE_RAW_"),
+        "Cobertura máxima",
+    )
+    require_markers(
+        ROOT / "premium_app.py",
+        ('APP_AUTHOR = "Esteban Cortez Richards"', 'ORANGE = "#FF7A00"', "Informe PDF Premium"),
+        "Base Premium",
+    )
+    require_markers(
+        ROOT / "reporting.py",
+        (
+            "SUBINFORME TÉCNICO DE PROCEDIMIENTOS",
+            "PROCEDIMIENTO PASO A PASO",
+            "Registro técnico",
+            "Folio",
+            "version` se mantiene por compatibilidad",
+        ),
+        "Informe y subinformes técnicos",
+    )
+    require_absent(
+        ROOT / "reporting.py",
+        (
+            '["Fecha y hora", now.strftime("%d-%m-%Y %H:%M"), "Versión", version]',
+            'f"AUTOGUARD SCAN DIOS v{version}',
+        ),
+        "Eliminación de versión visible en PDF",
+    )
+    require_markers(
+        ROOT / "make_icon.py",
+        ("AUTO GUARD", "SERVICE", "TU VEHÍCULO, NUESTRA PRIORIDAD", "autoguard.ico"),
+        "Branding oficial",
+    )
+    print("Fuente NIVEL DIOS PREMIUM con informe principal y subinformes preparada para Windows")
 
 
 if __name__ == "__main__":
