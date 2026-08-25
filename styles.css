@@ -61,9 +61,9 @@ h1 em { display: inline-block; color: transparent; background: linear-gradient(1
 
 .hero-visual { position: relative; min-height: 590px; display: grid; place-items: center; }
 .visual-glow { position: absolute; width: 520px; height: 520px; top: 15px; right: -25px; border-radius: 50%; background: radial-gradient(circle, rgba(255,106,0,.24), transparent 68%); filter: blur(7px); }
-.hero-art { position: relative; z-index: 2; width: min(100%, 585px); height: 555px; overflow: hidden; border: 1px solid rgba(255,138,31,.62); border-radius: 20px; background: #080a0c; box-shadow: 0 42px 90px rgba(0,0,0,.7), 0 0 0 8px rgba(255,255,255,.025); transform: perspective(1200px) rotateY(-3deg) rotateX(1deg); }
+.hero-art { position: relative; z-index: 2; width: min(100%, 650px); height: 555px; overflow: hidden; border: 1px solid rgba(255,138,31,.62); border-radius: 20px; background: #080a0c; box-shadow: 0 42px 90px rgba(0,0,0,.7), 0 0 0 8px rgba(255,255,255,.025); transform: perspective(1200px) rotateY(-3deg) rotateX(1deg); }
 .hero-art::before { content: ""; position: absolute; z-index: 3; inset: 0; pointer-events: none; background: linear-gradient(110deg, rgba(255,255,255,.13), transparent 20%, transparent 76%, rgba(255,106,0,.11)); }
-.hero-art img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+.hero-art img { width: 100%; height: 100%; object-fit: cover; object-position: 58% center; }
 .hero-art-overlay { position: absolute; z-index: 4; left: 22px; right: 22px; bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 13px 16px; border: 1px solid rgba(255,106,0,.48); border-radius: 9px; background: rgba(5,7,9,.9); backdrop-filter: blur(12px); }
 .hero-art-overlay span { color: var(--orange-2); font-size: .66rem; font-weight: 950; letter-spacing: .17em; }
 .hero-art-overlay strong { color: #d6dadd; font-size: .72rem; }
@@ -262,3 +262,4 @@ footer { padding: 30px 0; border-top: 1px solid #252b31; color: #7f8790; backgro
   html { scroll-behavior: auto; }
   * { transition: none !important; }
 }
+
