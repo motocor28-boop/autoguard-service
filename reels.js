@@ -1,59 +1,39 @@
-const year = document.getElementById('year');
-if (year) year.textContent = new Date().getFullYear();
-
-/* Biblioteca de videos publicados. Los archivos se sirven desde /reels. */
-const reels = [
+const guides = [
   {
-    category: 'FRENOS Y SEGURIDAD',
-    title: 'Tus frenos te están hablando',
-    description: 'Ruidos al frenar, vibraciones o cambios en el pedal son señales que requieren una revisión profesional.',
-    video: 'reels/tus-frenos-te-estan-hablando.mp4',
-    poster: 'assets/autoguard-frenos-premium.png',
-    layout: 'vertical'
+    number: '01',
+    title: 'Qué es un código DTC',
+    description: 'Es un registro generado por un módulo cuando detecta una condición fuera de lo esperado. Orienta el diagnóstico, pero no siempre identifica por sí solo una pieza defectuosa.'
   },
   {
-    category: 'AUTOGUARD SERVICIOS',
-    title: 'Seguridad mecánica a domicilio',
-    description: 'Conoce nuestros servicios de frenos, baterías, asistencia rápida y chequeos preventivos en Antofagasta.',
-    video: 'reels/autoguard-servicios-a-domicilio.mp4',
-    poster: 'assets/autoguard-menu-premium.png',
-    layout: 'wide'
+    number: '02',
+    title: 'Check Engine fijo o parpadeando',
+    description: 'Un testigo parpadeando puede indicar una condición más severa. Evita exigir el vehículo y coordina la lectura de códigos para obtener información concreta.'
+  },
+  {
+    number: '03',
+    title: 'Por qué no conviene borrar primero',
+    description: 'Antes de borrar, se deben registrar los códigos y datos disponibles. El borrado no corrige la causa y puede eliminar información útil para interpretar la falla.'
   }
 ];
 
 const grid = document.getElementById('reels-grid');
-const whatsappUrl = 'https://wa.me/56977482821?text=Hola%20AutoGuard%2C%20vi%20sus%20reels%20y%20quiero%20agendar%20una%20revisi%C3%B3n';
-
-function createMedia(reel) {
-  if (reel.video) {
-    return `
-      <video controls preload="metadata" playsinline poster="${reel.poster || ''}">
-        <source src="${reel.video}" type="video/mp4">
-        Tu navegador no puede reproducir este video.
-      </video>`;
-  }
-
-  return `
-    <div class="reel-placeholder">
-      <div>
-        <img src="${reel.poster || 'logo.svg'}" alt="" loading="lazy">
-        <span>${reel.status || 'PRÓXIMAMENTE'}</span>
-      </div>
-    </div>`;
-}
-
 if (grid) {
-  grid.innerHTML = reels.map((reel) => `
-    <article class="reel-card${reel.layout === 'wide' ? ' reel-card-wide' : ''}">
-      <div class="reel-media${reel.layout === 'wide' ? ' reel-media-wide' : ''}">${createMedia(reel)}</div>
-      <div class="reel-body">
-        <span class="reel-kicker">${reel.category}</span>
-        <h3>${reel.title}</h3>
-        <p>${reel.description}</p>
-        <div class="reel-actions">
-          ${reel.video ? `<a href="${reel.video}" target="_blank" rel="noopener">Abrir video</a>` : ''}
-          <a href="${whatsappUrl}" target="_blank" rel="noopener">Agendar revisión</a>
-        </div>
+  grid.innerHTML = guides.map((guide) => `
+    <article class="reel-card">
+      <div class="reel-poster" aria-hidden="true">
+        <span class="reel-number">${guide.number}</span>
+        <span class="reel-play">DTC</span>
+        <span class="reel-format">OBD</span>
       </div>
-    </article>`).join('');
+      <div class="reel-copy">
+        <span>GUÍA AUTOGUARD</span>
+        <h3>${guide.title}</h3>
+        <p>${guide.description}</p>
+      </div>
+    </article>
+  `).join('');
 }
+
+const year = document.getElementById('year');
+if (year) year.textContent = new Date().getFullYear();
+
