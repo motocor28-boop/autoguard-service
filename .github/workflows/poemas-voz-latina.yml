@@ -1,0 +1,308 @@
+name: Poemas voz latina
+
+on:
+  push:
+    branches:
+      - chatgpt-poemas-voz-latina
+  workflow_dispatch:
+
+jobs:
+  narrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install neural TTS
+        run: python -m pip install --quiet edge-tts
+
+      - name: Generate deep Latin male narrations
+        shell: bash
+        run: |
+          mkdir -p audios
+          cat > /tmp/generate.py <<'PY'
+          import asyncio
+          from pathlib import Path
+          import edge_tts
+
+          VOICE = "es-MX-JorgeNeural"
+          RATE = "-12%"
+          PITCH = "-25Hz"
+
+          poems = [
+          ("01_Solo_por_un_beso", '''solo por un beso,
+          el mundo se puede cambiar,
+          llegar del llanto a la risa
+          de la tierra al cielo.
+
+          Solo por un beso,
+          un castillo de desarma,
+          y deja entrar de lleno,
+          el sentimiento a las masmorras.
+
+          Solo por un beso,
+          las penurias se vuelven alegrias,
+          y el desgarro del pecho,
+          se vuelve un placer.
+
+          solo por un beso,
+          se vive el sexo de amor,
+          se muere dies veces
+          para revivir enamorado.
+
+          solo por un beso una vida cambia,
+          y yo que quiero mas que eso
+          solo un paraiso me queda
+          por vivir para siempre.'''),
+
+          ("02_Mini_Oda_a_la_mujer", '''Un paraíso en el Infierno.
+
+          TU NOMBRE SURCA MI CORAZON, COMO ARADO EN LA TIERRA, Y PALPITA TATUADA TU ALMA, TINTANDO MI CRAZON DE TU COLOR.
+
+          QUE SABEN LOS ANGELES DE QUERERTE, QUE SABEN LOS IRACUNDOS DE TENERTE, SOLO CON PROFANAR TUS LABIOS CON LOS MIOS, SE PAGA LA LABOR DE DIOS AL INVENTARTE.'''),
+
+          ("03_Pensamientos", '''la insolencia del pesimismo.
+
+          Pienso es cosas oscuras,
+          que dentro de mi iluminan,
+          una imaginación sin limites,
+          y que al corazón llegan.
+
+          Entre ciegos y sordos camino,
+          sin lazarillo los encuentro,
+          perdidos en un camino,
+          y sin poder parar.
+
+          Pensamientos sin destino,
+          sin meta a que llegar,
+          son pensamientos como tal,
+          y sin estar yo contigo.'''),
+
+          ("04_Amando_sin_pudor", '''El encuentro se dá,
+          entre pasiones y exaltos,
+          entre tentaciones de calor,
+          transpiraciones del cuerpo,
+          y sensaciones de placer.
+
+          Conspirados en el acto,
+          cómplices del amor,
+          en contacto casi exacto,
+          entre vínculos emancipados,
+          en batallas sin pudor.
+
+          En la lucha de la muerte,
+          entre cuerpos de soltura,
+          es una linda sepultura,
+          que da gusto al conocer.
+          los secretos del placer,
+          tentaciones conocidas,
+          que nos dejan condenados,
+          de por vida a una mujer.
+
+          Esas cosas de la vida,
+          condenadas por ilusos,
+          y probadas por intrusos,
+          que no dejan de nacer.'''),
+
+          ("05_palabras_con_y_sin_sentido", '''Amo tu aroma, amo tu sonrisa, amo tu sentido, amo tu ser, quiero tu mirada, quiero tus besos, quiero ser tuyo, quiero que mía seas.
+
+          adoro tu caminar, adoro tu llorar, adoro tu rebeldía, adoro tu saltar.
+
+          deseo tu corazón, deseo tu imaginación, deseo tu resplandor, y deseo tu amor.
+
+          Por eso me declaro un amador, queredor, adorador y deseador, de tu persona entera.
+          un café en la matutina mañana, junto al viento, ilusionado en el ayer, esperando del mañana, y gozando del hoy. Por eso tú serás mi mañana, mi ayer y mi hoy, y el café es nuestro amor.'''),
+
+          ("06_Cazuela_a_la_Chilena", '''Por la concha de mi abuela,
+          Anhelo desde lejos,
+          Entre porotos y legumbres
+          Yo quiero una cazuela.
+
+          Chuta! Grita el huaso,
+          Que sea a la chilena
+          Para comerla bien caliente,
+          Y disfrutar la cosa buena.
+
+          Con zapallo y una papa,
+          Con carne de vacuno
+          Con choclos bien parados
+          y un plato para uno.
+
+          Disfrutando de la tierra,
+          Mientras como tradición,
+          Cazuela a la chilena,
+          Viva mi nación.'''),
+
+          ("07_vida", '''Con el suspenso de aquel,
+          el día en que tendré que llegar,
+          con el sacrificio del peso,
+          que el ayer tendré que llorar.
+
+          No e mi falta de confianza,
+          sino lo que tengo que aguantar,
+          por el impulso de estudio,
+          y solo poder y tener que dar.
+
+          Es el peso que me toca la puerta,
+          en el lecho de la vida,
+          como en la media la largo,
+          se suspende de una liga.
+
+          Es mi niño al que mezo,
+          no a este cariño,
+          y no lo que merezco,
+          pobre de mi niño.
+          Son los años que pasan,
+          y no en desaprovecho,
+          pasan en experiencia,
+          que la vida me ha hecho.
+
+          Me siento solo aquí,
+          a pesar de estar con todo,
+          en el rio de las tristezas,
+          yo me ahogo en el lodo.
+
+          La vida es ver sin mirar,
+          tener todo cerca y lejos,
+          la vida es ir sin tocar,
+          como la mirada de estos tristes viejos.'''),
+
+          ("08_Belen", '''Ella ha llegado hoy,
+          con su cara tierna y marrón,
+          con sus ojos oscuros mansillados,
+          de corazon debil, pero rápido.
+
+          Ella ha llegado hoy,
+          con su llanto estremecedor,
+          con palabras sin compación,
+          que se leen en sus manos,
+          es ella la esperanza de mi ser,
+          es el fruto de mi amor,
+          ella ha llegado hoy.
+
+          Belen es su nombre,
+          pequeñita relacion,
+          hoy llego a mi vida,
+          y mañana la vere partir,
+          con sus llantos de manaqui,
+          y sus manitos de algodon,
+          con su boquita de rubi,
+          con su mirada de altazor.
+
+          es mi pena, es mi amor,
+          es el juramento de soñar,
+          que de alguien podre gritar,
+          y decir que la quiero de verdad.'''),
+
+          ("09_Pequeña", '''Se escuchan voces en la noche,
+          aves que no dejan de cantar,
+          voces de alegría y sufrimiento,
+          y una voz especial en el murmullo.
+
+          De mi cuerpo ha nacido,
+          con alaridos de alegría,
+          con sentimientos a deriva,
+          con amor en el seno.
+
+          Desgarra mi alma,
+          cuando lejos estoy de ella,
+          es mi hija amada,
+          alcanzando las estrellas.
+
+          Rebeldía viviente amada,
+          que su madre llevó
+          en su angosto vientre,
+          por tiempo contado.
+
+          Te quiero para siempre,
+          hija mia que lloras,
+          hija mia que quieres,
+          y no entiendes ahora.
+
+          El mundo es cruel ya,
+          cuando sepas aun peor será,
+          pero cuentas conmigo,
+          para todo camino a seguir.
+
+          Niña de mis sueños,
+          hija del amor y del cariño,
+          mi corazon esta contigo,
+          ahora y siempre como un niño.
+
+          Niña que duerme niña,
+          es grato saber de ti,
+          aunque la distancia nos separe,
+          de cuerpo y no de alma.
+
+          Los sentimientos nos engañan,
+          pero el amor que por ti yo siento,
+          los poderes de la magia,
+          son el saber del mundo.
+          Distancias sin parar,
+          de mendigos de cariño y frutos,
+          con solo el camino reparar,
+          y un sueño desencadenado.'''),
+
+          ("10_Sin_Pudor", '''Tener tu cuerpo,
+          entre jadeos y gemidos,
+          entre sudores y pasiones,
+          entre misterios concebidos.
+
+          en tu intimidad azumado,
+          y con tu cuerpo penetrado,
+          con mi lanza enamorada,
+          en tu húmedo nido.
+
+          sin pudor te toco,
+          es el roce del sentido,
+          las caricias del lívido,
+          y tus botones en mi boca
+
+          son tus labios en mi sexo,
+          sin pudor de bastarlo
+          entre tus calores y los míos
+          sudamos solo pasión.
+
+          quiero solo rosar,
+          tu piel sobre la mía,
+          y tan solo una arpía,
+          se enamora de lo nuestro.
+
+          cada calentura,
+          que nos lleva a una aventura,
+          sin colgajos descubiertos,
+          en tus labios yo descanso.
+
+          entre piernas y caderas
+          ya jadeantes de placer
+          te hago mía en un instante,
+          para caer en clímax dominante.
+
+          en silencio abrazados,
+          desnudos tras la noche,
+          o en el día terminado
+          un suspiro cada vez.
+
+          la mirada cómplice,
+          y termina la batalla,
+          una victoria de los dos,
+          fundidos en uno solamente.''')
+          ]
+
+          async def main():
+              out = Path("audios")
+              out.mkdir(exist_ok=True)
+              for stem, text in poems:
+                  clean = "\n".join(line.strip() for line in text.splitlines())
+                  communicate = edge_tts.Communicate(clean, VOICE, rate=RATE, pitch=PITCH)
+                  await communicate.save(str(out / f"{stem}.mp3"))
+                  print(f"generated {stem}")
+              (out / "VOICE.txt").write_text(f"voice={VOICE}\nrate={RATE}\npitch={PITCH}\n", encoding="utf-8")
+
+          asyncio.run(main())
+          PY
+          python /tmp/generate.py
+
+      - name: Upload narration package
+        uses: actions/upload-artifact@v4
+        with:
+          name: poemas-voz-latina
+          path: audios/
+          retention-days: 1
