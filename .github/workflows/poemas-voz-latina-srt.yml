@@ -1,0 +1,66 @@
+name: Poemas voz latina SRT
+
+on:
+  push:
+    branches:
+      - chatgpt-poemas-voz-latina
+  workflow_dispatch:
+
+jobs:
+  narrate-srt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt-poemas-voz-latina
+      - run: python -m pip install --quiet edge-tts
+      - name: Generate matching MP3 and SRT
+        shell: bash
+        run: |
+          mkdir -p narracion_final
+          cat > /tmp/srtgen.py <<'PY'
+          import ast, asyncio, re, textwrap
+          from pathlib import Path
+          import edge_tts
+
+          src = Path('.github/workflows/poemas-voz-latina.yml').read_text(encoding='utf-8')
+          m = re.search(r"cat > /tmp/generate\.py <<'PY'\n(.*?)\n\s*PY\n", src, re.S)
+          if not m:
+              raise RuntimeError('No se pudo extraer el guion de poemas')
+          code = textwrap.dedent(m.group(1))
+          tree = ast.parse(code)
+          values = {}
+          for node in tree.body:
+              if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+                  key = node.targets[0].id
+                  if key in {'VOICE','RATE','PITCH','poems'}:
+                      values[key] = ast.literal_eval(node.value)
+          VOICE, RATE, PITCH, poems = values['VOICE'], values['RATE'], values['PITCH'], values['poems']
+          out = Path('narracion_final')
+
+          async def make_one(stem, text):
+              clean = '\n'.join(line.strip() for line in text.splitlines())
+              comm = edge_tts.Communicate(clean, VOICE, rate=RATE, pitch=PITCH)
+              sub = edge_tts.SubMaker()
+              with open(out / f'{stem}.mp3', 'wb') as af:
+                  async for chunk in comm.stream():
+                      if chunk['type'] == 'audio':
+                          af.write(chunk['data'])
+                      elif chunk['type'] in ('WordBoundary','SentenceBoundary'):
+                          sub.feed(chunk)
+              (out / f'{stem}.srt').write_text(sub.get_srt(), encoding='utf-8')
+              print('done', stem)
+
+          async def main():
+              for stem, text in poems:
+                  await make_one(stem, text)
+              (out / 'VOICE.txt').write_text(f'voice={VOICE}\nrate={RATE}\npitch={PITCH}\n', encoding='utf-8')
+
+          asyncio.run(main())
+          PY
+          python /tmp/srtgen.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: poemas-voz-latina-srt
+          path: narracion_final/
+          retention-days: 1
