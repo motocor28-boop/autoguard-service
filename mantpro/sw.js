@@ -1,5 +1,5 @@
-const CACHE='eecr-supervision-charla-firmada-20260806-v1';
-const BUILD='20260806-charla-firmada-v1';
+const CACHE='eecr-supervision-auth-reset-20260921-v2';
+const BUILD='20260921-auth-reset-v2';
 const ASSETS=[
   './','./index.html','./instalar.html','./sin-ejemplos.html','./actualizar-movil-v3.html',
   `./styles.css?build=${BUILD}`,`./manual-fields.css?build=${BUILD}`,`./photo-report-fix.css?build=${BUILD}`,
