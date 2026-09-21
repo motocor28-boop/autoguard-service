@@ -1,7 +1,7 @@
 /* EECR — actualización controlada de la aplicación instalada sin borrar registros. */
 (()=>{
   'use strict';
-  const BUILD='20260921-auth-reset-v2';
+  const BUILD='20260921-open-access-v3';
   const SW=`sw.js?build=${BUILD}`;
   const originalRegister=navigator.serviceWorker?.register?.bind(navigator.serviceWorker);
 
