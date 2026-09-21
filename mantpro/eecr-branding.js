@@ -54,8 +54,14 @@
     if(tag&&tag.dataset.code!==code){tag.dataset.code=code;tag.innerHTML=`<b>Registro:</b> ${code}`}
   }
   function patchJsPdf(){
-    const API=window.jspdf?.jsPDF?.API;if(!API||API.__eecrPatched)return false;
+    const API=window.jspdf?.jsPDF?.API;
+    if(!API||API.__eecrPatched)return false;
     const original=API.text;
+    if(typeof original!=='function'){
+      API.__eecrPatched='unsupported-api-text';
+      console.info('EECR: jsPDF.API.text no está disponible; se omite el parche de texto para evitar errores.');
+      return false;
+    }
     API.text=function(value,x,y,...rest){
       let text=value;
       if(typeof text==='string'){
@@ -75,8 +81,8 @@
     API.__eecrPatched=true;return true;
   }
   let timer;
-  function enhance(){clearTimeout(timer);timer=setTimeout(()=>{replaceText();previewIdentifier();patchJsPdf()},60)}
+  function enhance(){clearTimeout(timer);timer=setTimeout(()=>{try{replaceText();previewIdentifier();patchJsPdf()}catch(error){console.warn('EECR identidad:',error)}},60)}
   const start=()=>{new MutationObserver(enhance).observe(document.body,{childList:true,subtree:true});enhance()};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
-  window.EECR_IDENTITY={full:FULL,short:SHORT,reportContext,current:()=>current,build:'2026-08-02-eecr'};
+  window.EECR_IDENTITY={full:FULL,short:SHORT,reportContext,current:()=>current,build:'2026-09-21-eecr-jsPDF-safe'};
 })();
