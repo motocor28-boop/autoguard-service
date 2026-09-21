@@ -1,5 +1,5 @@
-const CACHE='eecr-supervision-q1-cases-20260921-v7';
-const BUILD='20260921-q1-cases-v7';
+const CACHE='eecr-supervision-q1-cases-20260921-v8';
+const BUILD='20260921-q1-cases-v8';
 const ASSETS=[
   './','./index.html','./instalar.html','./sin-ejemplos.html','./actualizar-movil-v3.html',
   `./styles.css?build=${BUILD}`,`./manual-fields.css?build=${BUILD}`,`./photo-report-fix.css?build=${BUILD}`,
