@@ -1,7 +1,7 @@
 /* EECR — renovación forzada de PWA sin borrar datos operacionales. */
 (()=>{
   'use strict';
-  const BUILD='20260921-q1-cases-v6';
+  const BUILD='20260921-q1-cases-v7';
   const SW=`sw.js?build=${BUILD}`;
   const originalRegister=navigator.serviceWorker?.register?.bind(navigator.serviceWorker);
 
