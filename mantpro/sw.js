@@ -1,5 +1,5 @@
-const CACHE='eecr-supervision-open-access-20260921-v3';
-const BUILD='20260921-open-access-v3';
+const CACHE='eecr-supervision-open-access-20260921-v4';
+const BUILD='20260921-open-access-v4';
 const ASSETS=[
   './','./index.html','./instalar.html','./sin-ejemplos.html','./actualizar-movil-v3.html',
   `./styles.css?build=${BUILD}`,`./manual-fields.css?build=${BUILD}`,`./photo-report-fix.css?build=${BUILD}`,
@@ -31,7 +31,10 @@ self.addEventListener('fetch',event=>{
   const url=new URL(event.request.url);
   if(url.origin!==location.origin)return;
   const network=()=>fetch(event.request,{cache:'no-store'}).then(response=>{
-    if(response&&response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy)).catch(()=>{})}
+    if(response&&response.ok){
+      const copy=response.clone();
+      caches.open(CACHE).then(cache=>cache.put(event.request,copy)).catch(()=>{});
+    }
     return response;
   });
   event.respondWith(network().catch(()=>caches.match(event.request).then(hit=>hit||caches.match('./index.html')||caches.match('./'))));
