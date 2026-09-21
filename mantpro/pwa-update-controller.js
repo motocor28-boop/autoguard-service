@@ -1,22 +1,27 @@
-/* EECR — actualización controlada de la aplicación instalada sin borrar registros. */
+/* EECR — renovación forzada de PWA sin borrar datos operacionales. */
 (()=>{
   'use strict';
-  const BUILD='20260921-open-access-v3';
+  const BUILD='20260921-open-access-v4';
   const SW=`sw.js?build=${BUILD}`;
   const originalRegister=navigator.serviceWorker?.register?.bind(navigator.serviceWorker);
 
-  if(originalRegister){
+  async function purgeOldCaches(){
+    if(!('caches' in window))return;
     try{
-      navigator.serviceWorker.register=(url,options={})=>{
-        const target=/\bsw\.js(?:[?#]|$)/.test(String(url))?SW:url;
-        return originalRegister(target,{...options,updateViaCache:'none'});
-      };
-    }catch{}
+      const keys=await caches.keys();
+      await Promise.all(keys.filter(k=>k.startsWith('eecr-supervision-')).map(k=>caches.delete(k)));
+    }catch(error){console.warn('EECR limpieza cache:',error)}
   }
 
   async function update(){
+    await purgeOldCaches();
     if(!originalRegister)return;
     try{
+      const regs=await navigator.serviceWorker.getRegistrations();
+      for(const reg of regs){
+        const url=reg.active?.scriptURL||reg.waiting?.scriptURL||reg.installing?.scriptURL||'';
+        if(url.includes('/mantpro/sw.js'))await reg.unregister();
+      }
       const registration=await originalRegister(SW,{scope:'./',updateViaCache:'none'});
       await registration.update();
       if(registration.waiting)registration.waiting.postMessage({type:'SKIP_WAITING'});
