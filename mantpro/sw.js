@@ -1,5 +1,5 @@
-const CACHE='eecr-supervision-q1-cases-20260921-v6';
-const BUILD='20260921-q1-cases-v6';
+const CACHE='eecr-supervision-q1-cases-20260921-v7';
+const BUILD='20260921-q1-cases-v7';
 const ASSETS=[
   './','./index.html','./instalar.html','./sin-ejemplos.html','./actualizar-movil-v3.html',
   `./styles.css?build=${BUILD}`,`./manual-fields.css?build=${BUILD}`,`./photo-report-fix.css?build=${BUILD}`,
@@ -8,7 +8,7 @@ const ASSETS=[
   `./eecr-branding.css?build=${BUILD}`,`./pwa-update-controller.js?build=${BUILD}`,`./config.js?build=${BUILD}`,
   `./auth.js?build=${BUILD}`,`./jspdf.umd.min.js?build=${BUILD}`,`./report-dom-guard.js?build=${BUILD}`,
   `./photo-report-groups.js?build=${BUILD}`,`./photo-report-stages.js?build=${BUILD}`,`./app.js?build=${BUILD}`,
-  `./operational-cases-q1.js?build=${BUILD}`,`./local-bridge-q1-retry.js?build=${BUILD}`,
+  `./operational-cases-q1.js?build=${BUILD}`,`./q1-dashboard-status.js?build=${BUILD}`,`./local-bridge-q1-retry.js?build=${BUILD}`,
   `./mobile-photo-core.js?build=${BUILD}`,`./mobile-photo-descriptions.js?build=${BUILD}`,`./talk-photo-integration.js?build=${BUILD}`,
   `./danger-delete-records.js?build=${BUILD}`,`./ai-assistant.js?build=${BUILD}`,`./mobile-simple-ui.js?build=${BUILD}`,
   `./eecr-branding.js?build=${BUILD}`,`./no-demo-mode.js?build=${BUILD}`,`./walk-save-preview.js?build=${BUILD}`,
