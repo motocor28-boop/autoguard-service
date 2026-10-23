@@ -51,19 +51,27 @@
         return [h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join('-');
       };
       const headers={'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal',apikey:C.supabaseAnonKey,Authorization:'Bearer '+window.MANTPRO_AUTH.token()};
-      for(const x of local.filter(r=>r.dirty)){
-        const r=await fetch(C.supabaseUrl+'/rest/v1/mantpro_records?on_conflict=id',{method:'POST',headers,body:JSON.stringify({id:await cloudId(x.id),record_type:x.type,payload:{...x,dirty:false,synced:true},occurred_at:x.at})});
-        if(!r.ok)throw Error((await r.text())||`Error ${r.status}`);x.dirty=false;x.synced=true;
-      }
-      persist(local);
+      // Primero leer la nube: datos anteriores marcados como "synced" también se suben si no existen allí.
       const remote=[];
-      // PostgREST limita la cantidad de filas por respuesta: traer todo el historial en páginas.
       for(let offset=0;offset<50000;offset+=500){
         const r=await fetch(C.supabaseUrl+'/rest/v1/mantpro_records?select=payload&order=occurred_at.asc&limit=500&offset='+offset,{headers:{apikey:C.supabaseAnonKey,Authorization:'Bearer '+window.MANTPRO_AUTH.token()}});
         if(!r.ok)throw Error((await r.text())||'Error HTTP '+r.status);
         const page=await r.json();remote.push(...page);if(page.length<500)break;
       }
-      const map=new Map(records().map(x=>[x.id,x]));
+      const cloudRows=new Map(remote.map(row=>[row.payload?.id,row.payload]));
+      for(const x of local){
+        const other=cloudRows.get(x.id);
+        if(other&&!x.dirty)continue;
+        if(other&&x.dirty&&Date.parse(other.updatedAt||other.at||'')>Date.parse(x.updatedAt||x.at||'')){
+          // Mantener el cambio local pendiente: no sobrescribir una versión remota más nueva.
+          continue;
+        }
+        const r=await fetch(C.supabaseUrl+'/rest/v1/mantpro_records?on_conflict=id',{method:'POST',headers,body:JSON.stringify({id:await cloudId(x.id),record_type:x.type,payload:{...x,dirty:false,synced:true},occurred_at:x.at})});
+        if(!r.ok)throw Error((await r.text())||`Error ${r.status}`);
+        x.dirty=false;x.synced=true;
+      }
+      persist(local);
+      const map=new Map(local.map(x=>[x.id,x]));
       remote.forEach(row=>{const n=row.payload,o=map.get(n?.id);if(!n)return;if(!o||(!o.dirty&&new Date(n.updatedAt||n.at)>=new Date(o.updatedAt||o.at)))map.set(n.id,{...n,dirty:false,synced:true})});
       persist([...map.values()]);status('Sincronizado','ok');window.dispatchEvent(new CustomEvent('mantpro-sync-complete',{detail:{count:map.size}}));if(!document.querySelector('input,textarea,select:focus'))render();
     }catch(err){console.warn(err);status('Pendiente de sincronizar','warn')}
@@ -73,7 +81,7 @@
   function top(){const detail=!['home','jobs','safety','reports','more'].includes(state.route);$('#back').hidden=!detail;$('#nav').classList.toggle('hide',detail);$$('#nav [data-route]').forEach(b=>b.classList.toggle('on',b.dataset.route===state.route))}
   function home(){
     const all=records(),today=dateKey(),jobs=list('job'),safety=list('safety'),todayJobs=jobs.filter(x=>dateKey(x.data.actualStart||x.at)===today),openSafety=safety.filter(x=>!x.data.closedAt);
-    return `<section class="hero"><span class="eyebrow">Supervisor · ${esc(C.supervisor)}</span><h1>Registro en terreno</h1><p>${C.requireAuth===false?'Modo abierto: los datos quedan protegidos dentro de este dispositivo.':'Los datos del teléfono y computador se guardan en la misma nube.'}</p></section>
+    return `<section class="hero"><span class="eyebrow">Supervisor · ${esc(C.supervisor)}</span><h1>Registro en terreno</h1><p>${window.MANTPRO_AUTH?.token()?'Vinculado: teléfono y computador comparten registros.':'Trabajo local disponible. Toca el estado superior para vincular la sincronización entre dispositivos.'}</p></section>
     <div class="grid stats"><div class="card stat"><div class="label">OT de hoy</div><div class="num">${todayJobs.length}</div></div><div class="card stat"><div class="label">En ejecución</div><div class="num">${activeJobs().length}</div></div><div class="card stat"><div class="label">Desviaciones abiertas</div><div class="num">${openSafety.length}</div></div><div class="card stat"><div class="label">Pendientes nube</div><div class="num">${all.filter(x=>x.dirty).length}</div></div></div>
     <h2>Acciones rápidas</h2><div class="grid actions"><button class="quick" data-go="job_new"><b>▣</b>Nueva orden</button><button class="quick" data-go="progress_new"><b>＋</b>Registrar avance</button><button class="quick" data-go="safety_new"><b>⚠</b>Desviación</button><button class="quick" data-go="walk_new"><b>◉</b>Caminata</button></div>
     <h2>Trabajos activos</h2><div class="list">${activeJobs().length?activeJobs().slice().reverse().map(jobItem).join(''):empty('No hay trabajos activos.')}</div>`
