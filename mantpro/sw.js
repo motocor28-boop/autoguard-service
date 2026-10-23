@@ -1,5 +1,5 @@
-const CACHE='eecr-supervision-q1-cases-20260921-v8';
-const BUILD='20261023-sync-v1';
+const CACHE='eecr-supervision-20261023-otp-v2';
+const BUILD='20261023-otp-v2';
 const ASSETS=[
   './','./index.html','./instalar.html','./sin-ejemplos.html','./actualizar-movil-v3.html',
   `./styles.css?build=${BUILD}`,`./manual-fields.css?build=${BUILD}`,`./photo-report-fix.css?build=${BUILD}`,
@@ -24,7 +24,7 @@ self.addEventListener('install',event=>{
 });
 
 self.addEventListener('activate',event=>{
-  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));
+  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('eecr-supervision-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));
 });
 
 self.addEventListener('fetch',event=>{

@@ -48,42 +48,52 @@
     el.style.cssText='position:fixed;inset:0;z-index:100000;background:#000b;display:grid;place-items:center;padding:20px;color:#e8f0f6;font:16px Arial,sans-serif';
     el.innerHTML='<form id="eecr-cloud-form" style="width:min(410px,100%);padding:24px;background:#1c2832;border:1px solid #536574;border-radius:14px;display:grid;gap:14px">'+
       '<h2 style="margin:0">Vincular EECR / MantPro</h2>'+
-      '<p style="margin:0">Los datos guardados en este dispositivo permanecen intactos. La conexión requiere una verificación de correo una sola vez por dispositivo.</p>'+
+      '<p style="margin:0">Los datos guardados en este dispositivo permanecen intactos. Para vincular los dispositivos usa un enlace del correo o, si el mensaje contiene un código de 6 dígitos, introdúcelo abajo.</p>'+
       '<label>Correo autorizado<input id="eecr-cloud-email" type="email" required style="width:100%;padding:10px;box-sizing:border-box" value="'+html(C.allowedEmail||'')+'"></label>'+
-      '<button id="eecr-cloud-send" type="button" style="padding:12px">Enviar código al correo</button>'+
-      '<label>Código de 6 dígitos<input id="eecr-cloud-code" inputmode="numeric" maxlength="8" autocomplete="one-time-code" style="width:100%;padding:10px;box-sizing:border-box"></label>'+
+      '<button id="eecr-cloud-send" type="button" style="padding:12px">Enviar enlace o código</button>'+
+      '<label>Código de 6 dígitos (solo si el correo incluye un código)<input id="eecr-cloud-code" inputmode="numeric" maxlength="8" autocomplete="one-time-code" style="width:100%;padding:10px;box-sizing:border-box"></label>'+
       '<button type="submit" style="padding:12px;background:#ff8e17;color:#171b22;border:0;border-radius:5px;font-weight:bold">Activar sincronización</button>'+
       '<div id="eecr-cloud-message" role="status" style="font-size:14px"></div>'+
       '<button id="eecr-cloud-close" type="button" style="background:none;color:inherit;border:0;text-decoration:underline">Seguir trabajando sin conexión</button></form>';
     document.body.append(el);
-    const form=el.querySelector('form'), msg=el.querySelector('#eecr-cloud-message'), em=el.querySelector('#eecr-cloud-email');
+    const form=el.querySelector('form'), msg=el.querySelector('#eecr-cloud-message'), em=el.querySelector('#eecr-cloud-email');let requestAt=0,requestedEmail='';
     const checkEmail=()=>{const email=em.value.trim().toLowerCase();if(C.allowedEmail&&email!==String(C.allowedEmail).toLowerCase())throw Error('Este correo no está autorizado para EECR.');return email;};
     el.querySelector('#eecr-cloud-close').onclick=close;
     el.querySelector('#eecr-cloud-send').onclick=async()=>{
-      try{msg.textContent='Enviando…';await api('/auth/v1/otp',{email:checkEmail(),create_user:true});msg.textContent='Revisa tu correo e introduce el código. Si recibes un enlace, ábrelo en este mismo dispositivo.';}
+      try{const email=checkEmail();if(requestAt&&Date.now()-requestAt<60000)throw Error('Espera un minuto antes de solicitar otro código.');msg.textContent='Enviando…';await api('/auth/v1/otp?redirect_to='+encodeURIComponent(new URL('./',location.href).href),{email,create_user:false});requestedEmail=email;requestAt=Date.now();el.querySelector('#eecr-cloud-code').value='';msg.textContent='Revisa el mensaje más reciente: si contiene un enlace, ábrelo una sola vez en este teléfono; si contiene un código de seis dígitos, introdúcelo aquí.';}
       catch(e){msg.textContent='Error de envío: '+e.message;}
     };
     form.onsubmit=async e=>{
       e.preventDefault();
-      try{msg.textContent='Verificando…';const email=checkEmail(),code=el.querySelector('#eecr-cloud-code').value.trim();if(!/^[0-9]{6,8}$/.test(code))throw Error('Escribe el código recibido en el correo.');
+      try{msg.textContent='Verificando…';const email=checkEmail(),code=el.querySelector('#eecr-cloud-code').value.trim();if(requestedEmail!==email)throw Error('Solicita primero un código nuevo para este correo.');if(!/^[0-9]{6}$/.test(code))throw Error('Escribe el código de 6 dígitos del correo más reciente. Si recibiste un enlace, ábrelo directamente.');
         const result=await api('/auth/v1/verify',{email,token:code,type:'email'});
         installTokens(result);close();
-      }catch(error){msg.textContent='No se pudo vincular: '+error.message;}
+      }catch(error){msg.textContent='No se pudo vincular: '+(/token has expired|token.*invalid/i.test(error.message)?'Código o enlace caducado o ya utilizado. Solicita uno nuevo y usa el correo más reciente.':error.message);}
     };
     return el;
   }
   async function signOut(){save(null);notify('mantpro-auth-changed',{authenticated:false});}
-  function linkFromEmail(){
+  async function linkFromEmail(){
     try{
-      const hash=new URLSearchParams(location.hash.slice(1));
+      const hash=new URLSearchParams(location.hash.replace(/^#/,''));
+      const query=new URLSearchParams(location.search);
       if(hash.get('access_token')&&hash.get('refresh_token')){
         installTokens({access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token'),expires_in:Number(hash.get('expires_in')||3600)});
-        history.replaceState(null,'',location.pathname+location.search);
+        close();history.replaceState(null,'',location.pathname);return;
       }
-    }catch(e){console.warn('EECR: enlace de acceso inválido',e);}
+      // Soporta correos personalizados con token_hash de verificación.
+      if(query.get('token_hash')){
+        const type=query.get('type');if(type&&type!=='email'&&type!=='magiclink')throw Error('Enlace de acceso no reconocido.');
+        const answer=await api('/auth/v1/verify',{token_hash:query.get('token_hash'),type:'email'});
+        installTokens(answer);close();history.replaceState(null,'',location.pathname);return;
+      }
+    }catch(e){
+      console.warn('EECR: enlace de acceso inválido',e?.code||e?.message);
+      history.replaceState(null,'',location.pathname);
+      window.setTimeout(()=>{const msg=overlay()?.querySelector('#eecr-cloud-message');if(msg)msg.textContent='El enlace no es válido o ya fue utilizado. Solicita un correo nuevo desde este teléfono.';},0);
+    }
   }
   window.MANTPRO_AUTH={token,session:currentSession,ensure,authFetch,signOut,showLogin:overlay,requestPasswordReset:overlay,passwordOverlay:overlay};
-  linkFromEmail();
   // Iniciar sin bloquear trabajo offline ni solicitar contraseña al abrir.
-  Promise.resolve().then(()=>ensure()).then(ok=>{if(ok)notify('mantpro-auth-ready',{authenticated:true});});
+  Promise.resolve().then(()=>linkFromEmail()).then(()=>ensure()).then(ok=>{if(ok)notify('mantpro-auth-ready',{authenticated:true});});
 })();
