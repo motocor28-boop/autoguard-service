@@ -1,8 +1,9 @@
 // EECR: canal privado por clave aleatoria de 256 bits; sin correo ni permisos de lectura pública.
 import { createClient } from "jsr:@supabase/supabase-js@2.95.0";
 const allowed="https://motocor28-boop.github.io";
+const allowedLocal=new Set(["null","http://127.0.0.1:8788","http://localhost:8788"]);
 const cors={"Access-Control-Allow-Origin":allowed,"Access-Control-Allow-Headers":"content-type, apikey, authorization, x-client-info","Access-Control-Allow-Methods":"POST, OPTIONS","Vary":"Origin"};
-const json=(x:unknown,status=200)=>new Response(JSON.stringify(x),{status,headers:{...cors,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
+const json=(x:unknown,status=200)=>new Response(JSON.stringify(x),{status,headers:{...cors,"Access-Control-Allow-Origin":allowed,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
 const hex=(a:Uint8Array)=>Array.from(a,b=>b.toString(16).padStart(2,"0")).join("");
 function timestamp(s:unknown) {
   if(typeof s!=="string"||s.length>40)return null;
@@ -10,10 +11,10 @@ function timestamp(s:unknown) {
   return Number.isFinite(t)&&t>0&&t<=Date.now()+3600000?new Date(t).toISOString():null;
 }
 Deno.serve(async(request:Request)=>{
-  if(request.method==="OPTIONS")return new Response("ok",{headers:cors});
+  if(request.method==="OPTIONS")return new Response("ok",{headers:{...cors,"Access-Control-Allow-Origin": allowedLocal.has(request.headers.get("origin")||"") ? request.headers.get("origin")! : allowed}});
   if(request.method!=="POST")return json({error:"method_not_allowed"},405);
   const origin=request.headers.get("origin");
-  if(origin&&origin!==allowed)return json({error:"origin_not_allowed"},403);
+  if(origin&&origin!==allowed&&!allowedLocal.has(origin))return json({error:"origin_not_allowed"},403);
   let raw="";
   try{raw=await request.text();}catch{return json({error:"invalid_body"},400);}
   if(raw.length>2600000)return json({error:"payload_too_large"},413);
