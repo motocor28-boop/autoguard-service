@@ -73,17 +73,27 @@
     return el;
   }
   async function signOut(){save(null);notify('mantpro-auth-changed',{authenticated:false});}
-  function linkFromEmail(){
+  async function linkFromEmail(){
     try{
-      const hash=new URLSearchParams(location.hash.slice(1));
+      const hash=new URLSearchParams(location.hash.replace(/^#/,''));
+      const query=new URLSearchParams(location.search);
       if(hash.get('access_token')&&hash.get('refresh_token')){
         installTokens({access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token'),expires_in:Number(hash.get('expires_in')||3600)});
-        history.replaceState(null,'',location.pathname+location.search);
+        close();history.replaceState(null,'',location.pathname);return;
       }
-    }catch(e){console.warn('EECR: enlace de acceso inválido',e);}
+      // Soporta correos personalizados con token_hash de verificación.
+      if(query.get('token_hash')){
+        const type=query.get('type');if(type&&type!=='email'&&type!=='magiclink')throw Error('Enlace de acceso no reconocido.');
+        const answer=await api('/auth/v1/verify',{token_hash:query.get('token_hash'),type:'email'});
+        installTokens(answer);close();history.replaceState(null,'',location.pathname);return;
+      }
+    }catch(e){
+      console.warn('EECR: enlace de acceso inválido',e?.code||e?.message);
+      history.replaceState(null,'',location.pathname);
+      window.setTimeout(()=>{const msg=overlay()?.querySelector('#eecr-cloud-message');if(msg)msg.textContent='El enlace no es válido o ya fue utilizado. Solicita un correo nuevo desde este teléfono.';},0);
+    }
   }
   window.MANTPRO_AUTH={token,session:currentSession,ensure,authFetch,signOut,showLogin:overlay,requestPasswordReset:overlay,passwordOverlay:overlay};
-  linkFromEmail();
   // Iniciar sin bloquear trabajo offline ni solicitar contraseña al abrir.
-  Promise.resolve().then(()=>ensure()).then(ok=>{if(ok)notify('mantpro-auth-ready',{authenticated:true});});
+  Promise.resolve().then(()=>linkFromEmail()).then(()=>ensure()).then(ok=>{if(ok)notify('mantpro-auth-ready',{authenticated:true});});
 })();
