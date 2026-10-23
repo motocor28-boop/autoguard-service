@@ -2,7 +2,7 @@
 (()=>{
   'use strict';
   const C=window.MANTPRO_CONFIG||{}, STORE='mantpro-records-v3', LEGACY='mantpro-records';
-  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], iso=()=>new Date().toISOString(), uid=()=>crypto.randomUUID();
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], iso=()=>new Date().toISOString(), uid=()=>{if(crypto.randomUUID)return crypto.randomUUID();const b=new Uint8Array(16);crypto.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;const h=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');return [h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join('-')};
   const state={route:'home',previous:'home',jobId:null,walkId:null,photo:null,installPrompt:null,syncing:false};
   const monthNames=['01_Enero','02_Febrero','03_Marzo','04_Abril','05_Mayo','06_Junio','07_Julio','08_Agosto','09_Septiembre','10_Octubre','11_Noviembre','12_Diciembre'];
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
@@ -38,19 +38,42 @@
   function syncSoon(){clearTimeout(syncSoon.t);syncSoon.t=setTimeout(sync,700)}
   async function sync(){
     if(state.syncing)return;if(!navigator.onLine){status('Sin señal · guardado local','warn');return}
-    if(!window.MANTPRO_AUTH?.token()){status(C.requireAuth===false?'Guardado en este dispositivo':'Vinculación pendiente',C.requireAuth===false?'ok':'warn');return}
+    if(!await window.MANTPRO_AUTH?.ensure?.()){status('Datos locales seguros · toca aquí para vincular', 'warn');return}
     state.syncing=true;status('Sincronizando…');
     try{
       let local=records();
-      for(const x of local.filter(r=>r.dirty)){
-        const r=await fetch(C.supabaseUrl+'/rest/v1/mantpro_records?on_conflict=id',{method:'POST',headers:{'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:x.id,record_type:x.type,payload:{...x,dirty:false,synced:true},occurred_at:x.at})});
-        if(!r.ok)throw Error((await r.text())||`Error ${r.status}`);x.dirty=false;x.synced=true;
+      // PostgREST exige UUID: convertir IDs históricos a un identificador estable sin cambiar el original.
+      const cloudId=async raw=>{
+        if(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(raw)))return raw;
+        const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('EECR:'+String(raw))));
+        digest[6]=(digest[6]&15)|80;digest[8]=(digest[8]&63)|128;
+        const h=Array.from(digest.slice(0,16),n=>n.toString(16).padStart(2,'0')).join('');
+        return [h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join('-');
+      };
+      const headers={'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal',apikey:C.supabaseAnonKey,Authorization:'Bearer '+window.MANTPRO_AUTH.token()};
+      // Primero leer la nube: datos anteriores marcados como "synced" también se suben si no existen allí.
+      const remote=[];
+      for(let offset=0;offset<50000;offset+=500){
+        const r=await fetch(C.supabaseUrl+'/rest/v1/mantpro_records?select=payload&order=occurred_at.asc&limit=500&offset='+offset,{headers:{apikey:C.supabaseAnonKey,Authorization:'Bearer '+window.MANTPRO_AUTH.token()}});
+        if(!r.ok)throw Error((await r.text())||'Error HTTP '+r.status);
+        const page=await r.json();remote.push(...page);if(page.length<500)break;
+      }
+      const cloudRows=new Map(remote.map(row=>[row.payload?.id,row.payload]));
+      for(const x of local){
+        const other=cloudRows.get(x.id);
+        if(other&&!x.dirty)continue;
+        if(other&&x.dirty&&Date.parse(other.updatedAt||other.at||'')>Date.parse(x.updatedAt||x.at||'')){
+          // Mantener el cambio local pendiente: no sobrescribir una versión remota más nueva.
+          continue;
+        }
+        const r=await fetch(C.supabaseUrl+'/rest/v1/mantpro_records?on_conflict=id',{method:'POST',headers,body:JSON.stringify({id:await cloudId(x.id),record_type:x.type,payload:{...x,dirty:false,synced:true},occurred_at:x.at})});
+        if(!r.ok)throw Error((await r.text())||`Error ${r.status}`);
+        x.dirty=false;x.synced=true;
       }
       persist(local);
-      const r=await fetch(C.supabaseUrl+'/rest/v1/mantpro_records?select=payload&order=occurred_at.asc');if(!r.ok)throw Error((await r.text())||`Error ${r.status}`);
-      const remote=await r.json(),map=new Map(records().map(x=>[x.id,x]));
+      const map=new Map(local.map(x=>[x.id,x]));
       remote.forEach(row=>{const n=row.payload,o=map.get(n?.id);if(!n)return;if(!o||(!o.dirty&&new Date(n.updatedAt||n.at)>=new Date(o.updatedAt||o.at)))map.set(n.id,{...n,dirty:false,synced:true})});
-      persist([...map.values()]);status('Sincronizado','ok');if(!document.querySelector('input,textarea,select:focus'))render();
+      persist([...map.values()]);status('Sincronizado','ok');window.dispatchEvent(new CustomEvent('mantpro-sync-complete',{detail:{count:map.size}}));if(!document.querySelector('input,textarea,select:focus'))render();
     }catch(err){console.warn(err);status('Pendiente de sincronizar','warn')}
     finally{state.syncing=false}
   }
@@ -58,7 +81,7 @@
   function top(){const detail=!['home','jobs','safety','reports','more'].includes(state.route);$('#back').hidden=!detail;$('#nav').classList.toggle('hide',detail);$$('#nav [data-route]').forEach(b=>b.classList.toggle('on',b.dataset.route===state.route))}
   function home(){
     const all=records(),today=dateKey(),jobs=list('job'),safety=list('safety'),todayJobs=jobs.filter(x=>dateKey(x.data.actualStart||x.at)===today),openSafety=safety.filter(x=>!x.data.closedAt);
-    return `<section class="hero"><span class="eyebrow">Supervisor · ${esc(C.supervisor)}</span><h1>Registro en terreno</h1><p>${C.requireAuth===false?'Modo abierto: los datos quedan protegidos dentro de este dispositivo.':'Los datos del teléfono y computador se guardan en la misma nube.'}</p></section>
+    return `<section class="hero"><span class="eyebrow">Supervisor · ${esc(C.supervisor)}</span><h1>Registro en terreno</h1><p>${window.MANTPRO_AUTH?.token()?'Vinculado: teléfono y computador comparten registros.':'Trabajo local disponible. Toca el estado superior para vincular la sincronización entre dispositivos.'}</p></section>
     <div class="grid stats"><div class="card stat"><div class="label">OT de hoy</div><div class="num">${todayJobs.length}</div></div><div class="card stat"><div class="label">En ejecución</div><div class="num">${activeJobs().length}</div></div><div class="card stat"><div class="label">Desviaciones abiertas</div><div class="num">${openSafety.length}</div></div><div class="card stat"><div class="label">Pendientes nube</div><div class="num">${all.filter(x=>x.dirty).length}</div></div></div>
     <h2>Acciones rápidas</h2><div class="grid actions"><button class="quick" data-go="job_new"><b>▣</b>Nueva orden</button><button class="quick" data-go="progress_new"><b>＋</b>Registrar avance</button><button class="quick" data-go="safety_new"><b>⚠</b>Desviación</button><button class="quick" data-go="walk_new"><b>◉</b>Caminata</button></div>
     <h2>Trabajos activos</h2><div class="list">${activeJobs().length?activeJobs().slice().reverse().map(jobItem).join(''):empty('No hay trabajos activos.')}</div>`
@@ -167,7 +190,7 @@
   async function resetAll(){if(!confirm('Primero se creará un respaldo. Luego se borrarán los datos locales y de la nube. ¿Continuar?'))return;await createBackup();const code=prompt('Escribe BORRAR para confirmar el reinicio total.');if(code!=='BORRAR')return;try{if(window.MANTPRO_AUTH?.token()){const r=await fetch(C.supabaseUrl+'/rest/v1/mantpro_records?id=not.is.null',{method:'DELETE'});if(!r.ok)throw Error(await r.text())}persist([]);toast('Datos eliminados. MANTPRO quedó en cero.');go('home')}catch{alert('No se completó el borrado en la nube. Los datos se conservaron para evitar una pérdida parcial.')}}
   async function installApp(){if(state.installPrompt){state.installPrompt.prompt();await state.installPrompt.userChoice;state.installPrompt=null;toast('Instalación iniciada')}else alert('En computador: abre el menú del navegador y elige “Aplicaciones > Instalar este sitio”. En Android: menú ⋮ > Agregar a pantalla principal > Instalar.')}
   function back(){if(state.route==='job_detail'||state.route==='job_report')go('jobs');else if(state.route==='walk_detail')go('safety');else go(state.previous||'home')}
-  function boot(){migrate();$('#back').onclick=back;$('#state').onclick=sync;$('#photo').onchange=handlePhoto;$('#restore-file').onchange=restoreFile;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();state.installPrompt=e});window.addEventListener('online',sync);window.addEventListener('offline',()=>status('Sin señal · guardado local','warn'));window.addEventListener('mantpro-auth-ready',sync);window.addEventListener('mantpro-auth-changed',sync);if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js?v=13').catch(()=>{});render();sync();setInterval(()=>{if(!document.hidden)sync()},30000)}
+  function boot(){migrate();$('#back').onclick=back;$('#state').onclick=()=>{if(!window.MANTPRO_AUTH?.token())window.MANTPRO_AUTH?.showLogin?.();else sync()};$('#photo').onchange=handlePhoto;$('#restore-file').onchange=restoreFile;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();state.installPrompt=e});window.addEventListener('online',sync);window.addEventListener('offline',()=>status('Sin señal · guardado local','warn'));window.addEventListener('mantpro-auth-ready',sync);window.addEventListener('mantpro-auth-changed',sync);if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js?v=20261023-eecr-sync').catch(()=>{});render();sync();setInterval(()=>{if(!document.hidden)sync()},30000)}
   window.MANTPRO={records,render,sync};boot();
 })();
 
