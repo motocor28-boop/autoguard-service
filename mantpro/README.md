@@ -1,4 +1,4 @@
-# EECR / MantPro IA — sincronización automática sin correo
+# EECR / MantPro — sincronización automática sin correo
 
 La aplicación funciona sin conexión y conserva los registros en el navegador (`mantpro-records-v3`). Una vez compartida una **clave privada entre el PC y el teléfono**, sincroniza automáticamente con el canal privado `eecr-device-sync` en Supabase, con independencia de si la conexión de Windows proviene del hotspot del Android o de otro router.
 

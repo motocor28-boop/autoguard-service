@@ -1,4 +1,4 @@
-# MANTPRO IA Cloud — instalación y uso
+# MantPro / EECR — instalación y uso
 
 Dirección oficial: https://motocor28-boop.github.io/autoguard-service/mantpro/
 

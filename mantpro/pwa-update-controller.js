@@ -1,7 +1,7 @@
 /* EECR: actualización PWA sin limpiar datos ni cachés antes de instalar la nueva versión. */
 (()=>{
   'use strict';
-  const BUILD='20261023-hepi-v1';
+  const BUILD='20261023-labels-v1';
   const SW='sw.js?build='+BUILD;
   async function update(){
     if(!('serviceWorker' in navigator)||!navigator.onLine)return;
