@@ -47,7 +47,7 @@
         (buckets[types[x.type]]??=[]).push(mapRecord(x));
       }
       const signature=serial(Object.fromEntries(Object.entries(buckets).map(([k,v])=>[k,v.map(x=>[x.id,x.updatedAt])])));
-      if(signature===last)return true;
+      if(signature===last&&lastSuccess&&Date.now()-Date.parse(lastSuccess)<60000)return true;
       for(const base of API){
         try{
           const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),3500);
