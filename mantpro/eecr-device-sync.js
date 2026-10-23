@@ -4,7 +4,7 @@
 (()=>{
   'use strict';
   const C=window.MANTPRO_CONFIG||{};
-  const STORE='mantpro-records-v3',PAIR='eecr-device-pair-v1',ACK='eecr-device-ack-v1',CONFLICT='eecr-device-conflicts-v1';
+  const STORE='mantpro-records-v3',PAIR='eecr-device-pair-v1',ACK='eecr-device-ack-v1',CONFLICT='eecr-device-conflicts-v1',SINCE='eecr-device-last-pull-v1';
   const API=String(C.supabaseUrl||'').replace(/\/$/,'')+'/functions/v1/eecr-device-sync';
   const isMobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
   const $$=s=>document.querySelector(s);
@@ -23,7 +23,7 @@
     if(!keyPattern.test(value))throw Error('El enlace de emparejamiento no es válido.');
     if(secret&&secret!==value)throw Error('Este dispositivo ya pertenece a otro canal. Conserva el canal actual o recupera primero un respaldo.');
     localStorage.setItem(PAIR,value);secret=value;
-    localStorage.removeItem(ACK); // Se vuelven a verificar todos los registros en el canal elegido.
+    localStorage.removeItem(ACK);localStorage.removeItem(SINCE); // Canal nuevo: traer todo antes de sincronizar.
   }
   function pairingUrl(){return location.origin+location.pathname+'#eecrDevice='+encodeURIComponent(secret);}
   function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -40,14 +40,17 @@
     return data;
   }
   async function pull(){
-    let cursor=null,received=[];
+    let offset=0,received=[],watermark=null;
+    const last=localStorage.getItem(SINCE);
+    const since=last&&Number.isFinite(Date.parse(last))?new Date(Date.parse(last)-5000).toISOString():null;
     for(let page=0;page<2000;page++){
-      const res=await call('pull',{cursor,limit:4});
+      const res=await call('pull',{since,offset,limit:8});
       if(!Array.isArray(res.records))throw Error('Respuesta de sincronización inválida');
       received.push(...res.records.filter(x=>x&&typeof x.id==='string'));
-      if(!res.cursor)return received;
-      if(res.cursor===cursor)throw Error('Cursor sin avance');
-      cursor=res.cursor;
+      if(res.watermark&&(!watermark||Date.parse(res.watermark)>Date.parse(watermark)))watermark=res.watermark;
+      if(res.nextOffset===null)return {records:received,watermark};
+      if(!Number.isInteger(res.nextOffset)||res.nextOffset<=offset)throw Error('Cursor sin avance');
+      offset=res.nextOffset;
     }
     throw Error('Historial demasiado extenso para una sola sincronización.');
   }
@@ -109,8 +112,9 @@
       status('Sincronizando…');
       const up=await push();
       const ack=safeRead(ACK,{});
-      const down=await pull();
-      const conflicts=merge(down,ack);
+      const pulled=await pull();
+      const conflicts=merge(pulled.records,ack);
+      if(pulled.watermark)localStorage.setItem(SINCE,pulled.watermark);
       lastOk=new Date().toISOString();errorCount=0;
       const pending=localRecords().filter(x=>ack[x.id]!==stamp(x)).length;
       if(up.oversized||conflicts||pending)status('Sincronizado parcialmente · revisar '+(pending+up.oversized+conflicts),'warn');
