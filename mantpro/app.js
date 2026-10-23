@@ -2,7 +2,7 @@
 (()=>{
   'use strict';
   const C=window.MANTPRO_CONFIG||{}, STORE='mantpro-records-v3', LEGACY='mantpro-records';
-  const $=s=>document.querySelector(s), $=s=>[...document.querySelectorAll(s)], iso=()=>new Date().toISOString(), uid=()=>{if(crypto.randomUUID)return crypto.randomUUID();const b=new Uint8Array(16);crypto.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;const h=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');return [h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join('-')};
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], iso=()=>new Date().toISOString(), uid=()=>{if(crypto.randomUUID)return crypto.randomUUID();const b=new Uint8Array(16);crypto.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;const h=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');return [h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join('-')};
   const state={route:'home',previous:'home',jobId:null,walkId:null,photo:null,installPrompt:null,syncing:false};
   const monthNames=['01_Enero','02_Febrero','03_Marzo','04_Abril','05_Mayo','06_Junio','07_Julio','08_Agosto','09_Septiembre','10_Octubre','11_Noviembre','12_Diciembre'];
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
