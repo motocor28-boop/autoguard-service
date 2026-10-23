@@ -1,0 +1,26 @@
+/* HEPI — ficha de operador por dispositivo. No modifica formularios operacionales. */
+.eecr-operator-badge{flex:0 1 auto;min-width:0;max-width:43vw;min-height:35px;padding:7px 9px;font-size:11px;line-height:1.1;border:1px solid #3d6b85;color:#e8f3fc;background:#203542;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.eecr-operator-home{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #447087;border-left:4px solid #53aacd;border-radius:12px;padding:11px 13px;margin:10px 0 18px;background:#1b303b}
+.eecr-operator-home>div{min-width:0;display:flex;flex-direction:column;gap:3px}
+.eecr-operator-home b{font-size:13px;color:#8dd3f1}
+.eecr-operator-home span{font-size:13px;color:#ebf3f8;overflow-wrap:anywhere}
+.eecr-operator-home button{font-size:12px;min-height:36px;padding:7px 10px;white-space:normal}
+.eecr-profile-backdrop{position:fixed;inset:0;z-index:250000;background:#07101bd9;display:grid;place-items:center;overflow:auto;padding:18px;color:#f0f6fa}
+.eecr-profile-form{width:min(450px,100%);display:grid;gap:13px;padding:23px;background:#192b37;border:1px solid #65899a;border-radius:16px;box-shadow:0 16px 55px #0009;font:14px/1.4 system-ui,-apple-system,Segoe UI,sans-serif}
+.eecr-profile-org{font-size:11px;color:#82cadf;letter-spacing:.06em;font-weight:800;margin:0}
+.eecr-profile-form h2{margin:0;color:white;font-size:21px}
+.eecr-profile-form p:not(.eecr-profile-org){margin:0;font-size:13px;color:#d0dbe3}
+.eecr-profile-form label{display:grid;gap:6px;color:#f0f6fa;font-weight:600}
+.eecr-profile-form select,.eecr-profile-form input{width:100%;padding:11px 12px;border:1px solid #708b9a;background:#f9fbfc;color:#152431;border-radius:8px;font:inherit}
+.eecr-profile-form .eecr-profile-error{color:#ffbec4!important}
+.eecr-profile-actions{display:flex;justify-content:flex-end;gap:8px}
+.eecr-profile-actions button{font-size:13px}
+.eecr-profile-actions .eecr-profile-save{background:#257ca3;color:#fff}
+.eecr-hepi-report-identity{font:12px/1.5 Arial,sans-serif;color:#17364b;background:#fff;border-bottom:2px solid #207d98;padding:8px 0 12px;margin-bottom:17px}
+.eecr-hepi-report-title{display:flex;flex-direction:column;gap:3px}
+.eecr-hepi-report-title b{font-size:16px;color:#12516c}
+.eecr-hepi-report-title span{font-size:10px;letter-spacing:.04em;color:#547584}
+.eecr-hepi-report-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:10px}
+.eecr-hepi-report-meta span{overflow-wrap:anywhere}
+@media(max-width:520px){.eecr-operator-badge{max-width:36vw;font-size:10px;padding:6px}.eecr-operator-home{flex-direction:column;align-items:stretch}.eecr-hepi-report-meta{grid-template-columns:1fr}}
+@media print{.eecr-operator-badge,.eecr-operator-home,.eecr-profile-backdrop{display:none!important}.eecr-hepi-report-identity{display:block;break-inside:avoid;border-bottom:2px solid #207d98;color:#17364b}}
