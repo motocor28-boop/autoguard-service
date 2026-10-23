@@ -1,5 +1,5 @@
-const CACHE='eecr-supervision-20261023-hepi-v1';
-const BUILD='20261023-hepi-v1';
+const CACHE='eecr-supervision-20261023-labels-v1';
+const BUILD='20261023-labels-v1';
 const ASSETS=[
   './','./index.html','./instalar.html','./sin-ejemplos.html','./actualizar-movil-v3.html',
   `./styles.css?build=${BUILD}`,`./manual-fields.css?build=${BUILD}`,`./photo-report-fix.css?build=${BUILD}`,
