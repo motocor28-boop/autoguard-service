@@ -134,14 +134,14 @@
     panel.style.cssText='position:fixed;inset:0;z-index:200000;background:#0c1420d9;display:grid;place-items:center;padding:16px;overflow:auto';
     panel.innerHTML='<section style="width:min(440px,100%);color:#eaf1fb;background:#192939;border:1px solid #607688;border-radius:16px;padding:22px;font:15px Arial,sans-serif;display:grid;gap:13px">'+
       '<h2 style="margin:0;font-size:21px">Sincronización automática EECR</h2>'+
-      '<p style="margin:0">Sin correo ni contraseña. El enlace de emparejamiento se usa <b>una sola vez</b>; después se sincroniza automáticamente cuando hay Internet, incluido el hotspot del teléfono.</p>'+
+      (isMobile?'<p style="margin:0">Conecta Informe KPI por número de teléfono y autoriza cada computador desde este equipo. Después la sincronización es automática con Internet o hotspot.</p>':'<p style="margin:0">Sincronización privada, automática con Internet o hotspot.</p>')+
       (secret?'<p style="margin:0;color:#9ee0bd">Este dispositivo tiene un canal privado configurado.</p>'+
         (isMobile?'':'<button id="eecr-copy-pair" style="padding:12px">Copiar enlace para el otro dispositivo</button><button id="eecr-share-pair" style="padding:12px">Compartir enlace</button>'):
         (!isMobile?'<button id="eecr-create-pair" style="padding:12px;background:#f9a04a;color:#1c1c1c;border:0;border-radius:5px;font-weight:bold">Preparar sincronización del PC</button>':
         '<p style="margin:0">Abre en este teléfono el enlace enviado desde el computador, o pega aquí el enlace recibido.</p>'+
         '<input id="eecr-paste-pair" placeholder="Pegar enlace o clave de emparejamiento" style="width:100%;padding:10px;box-sizing:border-box">'+
         '<button id="eecr-use-pair" style="padding:12px">Conectar este teléfono</button>'))+
-      '<button id="eecr-phone-setup-button" style="padding:10px">Conectar Informe KPI por número</button>'+ 
+      (isMobile?'<button id="eecr-phone-setup-button" style="padding:10px">Conectar Informe KPI por número</button>':'')+ 
       '<button id="eecr-run-sync" style="padding:10px">Comprobar sincronización</button>'+
       '<div id="eecr-pair-feedback" style="font-size:13px;line-height:1.5" role="status"></div>'+
       '<p style="font-size:12px;margin:0;color:#cad4df">Mantén privado el enlace: permite acceder a los datos de mantenimiento. No borres el almacenamiento del navegador ni desinstales sin un respaldo JSON.</p>'+
