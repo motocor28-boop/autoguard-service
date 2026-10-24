@@ -199,7 +199,23 @@
       if(secret)sync();
     }catch(e){status('Vinculación pendiente · datos locales seguros','warn');console.warn(e);}
   }
-  window.EECR_DEVICE_SYNC={sync,openPanel,hasPair:()=>!!secret,lastSuccess:()=>lastOk};
+  // Solo el flujo de autorización cifrada puede invocar este cambio de grupo.
+  // Conservar los registros originales; restablecer solo el cursor y los ACK del canal anterior.
+  async function adoptAuthorizedChannel(value){
+    if(!keyPattern.test(value))throw Error('Canal de grupo inválido.');
+    if(secret===value)return;
+    for(let attempts=0;inFlight&&attempts<40;attempts++)await new Promise(resolve=>setTimeout(resolve,150));
+    if(inFlight)throw Error('Hay una sincronización en curso. Vuelve a intentar la asociación.');
+    localStorage.setItem(PAIR,value);
+    secret=value;
+    localStorage.removeItem(ACK);
+    localStorage.removeItem(SINCE);
+    lastOk=null;
+    status('Grupo autorizado · preparando sincronización…','warn');
+    // Los datos existentes nunca se borran; se sincronizarán con el grupo autorizado.
+    await sync();
+  }
+  window.EECR_DEVICE_SYNC={sync,openPanel,hasPair:()=>!!secret,lastSuccess:()=>lastOk,adoptAuthorizedChannel};
   window.EECR_DEVICE_SYNC_BOOTING=false;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
