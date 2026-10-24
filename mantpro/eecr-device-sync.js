@@ -136,12 +136,12 @@
       '<h2 style="margin:0;font-size:21px">Sincronización automática EECR</h2>'+
       '<p style="margin:0">Sin correo ni contraseña. El enlace de emparejamiento se usa <b>una sola vez</b>; después se sincroniza automáticamente cuando hay Internet, incluido el hotspot del teléfono.</p>'+
       (secret?'<p style="margin:0;color:#9ee0bd">Este dispositivo tiene un canal privado configurado.</p>'+
-        '<button id="eecr-copy-pair" style="padding:12px">Copiar enlace para el otro dispositivo</button>'+
-        '<button id="eecr-share-pair" style="padding:12px">Compartir enlace</button>':
+        (isMobile?'':'<button id="eecr-copy-pair" style="padding:12px">Copiar enlace para el otro dispositivo</button><button id="eecr-share-pair" style="padding:12px">Compartir enlace</button>'):
         (!isMobile?'<button id="eecr-create-pair" style="padding:12px;background:#f9a04a;color:#1c1c1c;border:0;border-radius:5px;font-weight:bold">Preparar sincronización del PC</button>':
         '<p style="margin:0">Abre en este teléfono el enlace enviado desde el computador, o pega aquí el enlace recibido.</p>'+
         '<input id="eecr-paste-pair" placeholder="Pegar enlace o clave de emparejamiento" style="width:100%;padding:10px;box-sizing:border-box">'+
         '<button id="eecr-use-pair" style="padding:12px">Conectar este teléfono</button>'))+
+      '<button id="eecr-phone-setup-button" style="padding:10px">Conectar Informe KPI por número</button>'+ 
       '<button id="eecr-run-sync" style="padding:10px">Comprobar sincronización</button>'+
       '<div id="eecr-pair-feedback" style="font-size:13px;line-height:1.5" role="status"></div>'+
       '<p style="font-size:12px;margin:0;color:#cad4df">Mantén privado el enlace: permite acceder a los datos de mantenimiento. No borres el almacenamiento del navegador ni desinstales sin un respaldo JSON.</p>'+
@@ -149,6 +149,7 @@
     document.body.append(panel);
     const $=id=>panel.querySelector('#'+id),feedback=message=>{$('eecr-pair-feedback').textContent=message;};
     $('eecr-close-pair').onclick=close;
+    if($('eecr-phone-setup-button'))$('eecr-phone-setup-button').onclick=()=>{close();window.EECR_PHONE_BINDING?.openSetup?.();};
     if($('eecr-create-pair'))$('eecr-create-pair').onclick=()=>{
       try{persistSecret(makeSecret());close();openPanel();sync();}
       catch(e){feedback(e.message);}
@@ -186,7 +187,7 @@
   function init(){
     try{
       acceptLink();
-      if(!secret&&!isMobile){persistSecret(makeSecret());}
+      if(!secret){persistSecret(makeSecret());}
       const top=$$('#state');
       if(top){top.onclick=openPanel;}
       status(secret?'Preparando sincronización…':'Vincular sin correo','warn');
