@@ -79,7 +79,7 @@ function openSetup(){
   const value=panel.querySelector('[name=phone]').value.trim();
   try{
    if(!secret())throw Error('Abre primero MantPro móvil.');
-   if(phone&&phone!==value&&!confirm('Cambiar el grupo de sincronización requiere autorización. No se borrarán los registros locales. ¿Continuar?'))return;
+   if(phone&&phone.replace(/[^0-9]/g,'')!==value.replace(/[^0-9]/g,''))throw Error('Este teléfono ya pertenece a otro grupo. No se mezclan datos entre números. Conserva su grupo actual y crea un respaldo antes de cualquier migración.');
    const previous=phone;
    phone=value;
    try{
