@@ -136,8 +136,7 @@
       '<h2 style="margin:0;font-size:21px">Sincronización automática EECR</h2>'+
       '<p style="margin:0">Sin correo ni contraseña. El enlace de emparejamiento se usa <b>una sola vez</b>; después se sincroniza automáticamente cuando hay Internet, incluido el hotspot del teléfono.</p>'+
       (secret?'<p style="margin:0;color:#9ee0bd">Este dispositivo tiene un canal privado configurado.</p>'+
-        '<button id="eecr-copy-pair" style="padding:12px">Copiar enlace para el otro dispositivo</button>'+
-        '<button id="eecr-share-pair" style="padding:12px">Compartir enlace</button>':
+        (isMobile?'':'<button id="eecr-copy-pair" style="padding:12px">Copiar enlace para el otro dispositivo</button><button id="eecr-share-pair" style="padding:12px">Compartir enlace</button>'):
         (!isMobile?'<button id="eecr-create-pair" style="padding:12px;background:#f9a04a;color:#1c1c1c;border:0;border-radius:5px;font-weight:bold">Preparar sincronización del PC</button>':
         '<p style="margin:0">Abre en este teléfono el enlace enviado desde el computador, o pega aquí el enlace recibido.</p>'+
         '<input id="eecr-paste-pair" placeholder="Pegar enlace o clave de emparejamiento" style="width:100%;padding:10px;box-sizing:border-box">'+
