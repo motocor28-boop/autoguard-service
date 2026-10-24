@@ -1,7 +1,7 @@
 /* EECR: actualización PWA sin limpiar datos ni cachés antes de instalar la nueva versión. */
 (()=>{
   'use strict';
-  const BUILD='20261024-phone-devices-v1';
+  const BUILD='20261024-phone-devices-v2';
   const SW='sw.js?build='+BUILD;
   async function update(){
     if(!('serviceWorker' in navigator)||!navigator.onLine)return;
