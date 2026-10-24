@@ -1,5 +1,5 @@
-const CACHE='eecr-supervision-20261024-phone-devices-v2';
-const BUILD='20261024-phone-devices-v2';
+const CACHE='eecr-supervision-20261024-group-multiphone-v1';
+const BUILD='20261024-group-multiphone-v1';
 const ASSETS=[
   './','./index.html','./instalar.html','./sin-ejemplos.html','./actualizar-movil-v3.html',
   `./styles.css?build=${BUILD}`,`./manual-fields.css?build=${BUILD}`,`./photo-report-fix.css?build=${BUILD}`,
