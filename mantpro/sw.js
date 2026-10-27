@@ -1,5 +1,5 @@
-const CACHE='eecr-supervision-20261026-pin-v2';
-const BUILD='20261026-pin-v2';
+const CACHE='eecr-supervision-20261026-unico-canal-v3';
+const BUILD='20261026-unico-canal-v3';
 const ASSETS=[
   './','./index.html','./instalar.html','./sin-ejemplos.html','./actualizar-movil-v3.html',
   `./styles.css?build=${BUILD}`,`./manual-fields.css?build=${BUILD}`,`./photo-report-fix.css?build=${BUILD}`,
@@ -7,8 +7,8 @@ const ASSETS=[
   `./danger-delete-records.css?build=${BUILD}`,`./ai-assistant.css?build=${BUILD}`,`./mobile-simple-ui.css?build=${BUILD}`,
   `./eecr-branding.css?build=${BUILD}`,`./eecr-hepi-profile.css?build=${BUILD}`,`./pwa-update-controller.js?build=${BUILD}`,`./config.js?build=${BUILD}`,
   `./auth.js?build=${BUILD}`,`./jspdf.umd.min.js?build=${BUILD}`,`./report-dom-guard.js?build=${BUILD}`,
-  `./photo-report-groups.js?build=${BUILD}`,`./photo-report-stages.js?build=${BUILD}`,`./app.js?build=${BUILD}`,`./eecr-device-sync.js?build=${BUILD}`,`./eecr-simple-pin.js?build=${BUILD}`,`./eecr-wifi-direct.js?build=${BUILD}`,
-  `./operational-cases-q1.js?build=${BUILD}`,`./q1-dashboard-status.js?build=${BUILD}`,`./local-bridge-q1-retry.js?build=${BUILD}`,`./eecr-kpi-live-bridge.js?build=${BUILD}`,`./eecr-informe-kpi-pc.js?build=${BUILD}`,
+  `./photo-report-groups.js?build=${BUILD}`,`./photo-report-stages.js?build=${BUILD}`,`./app.js?build=${BUILD}`,`./eecr-device-sync.js?build=${BUILD}`,
+  `./operational-cases-q1.js?build=${BUILD}`,`./q1-dashboard-status.js?build=${BUILD}`,`./eecr-informe-kpi-pc.js?build=${BUILD}`,
   `./mobile-photo-core.js?build=${BUILD}`,`./mobile-photo-descriptions.js?build=${BUILD}`,`./talk-photo-integration.js?build=${BUILD}`,
   `./danger-delete-records.js?build=${BUILD}`,`./ai-assistant.js?build=${BUILD}`,`./mobile-simple-ui.js?build=${BUILD}`,
   `./eecr-branding.js?build=${BUILD}`,`./eecr-hepi-profile.js?build=${BUILD}`,`./no-demo-mode.js?build=${BUILD}`,`./walk-save-preview.js?build=${BUILD}`,
