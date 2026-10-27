@@ -52,6 +52,7 @@ function open(){
  view.querySelector('#eecr-pin-create').onclick=create;view.querySelector('#eecr-pin-join').onclick=join;view.querySelector('#eecr-pin-close').onclick=close;
 }
 function start(){
+ window.EECR_DEVICE_SYNC && (window.EECR_DEVICE_SYNC.openPanel=open);
  const e=document.querySelector('#state');if(e){e.onclick=open;e.title='Conectar otro teléfono o PC mediante PIN';}
  const top=document.querySelector('.topbar');if(top&&!document.getElementById('eecr-pin-nav')){
   const b=document.createElement('button');b.id='eecr-pin-nav';b.type='button';b.textContent='PIN';
