@@ -27,10 +27,10 @@ if(!configured){
 }
 let b=[],size=0,pending=0;
 async function send(){if(b.length){const ans=await call('push',{records:b});if(!ans.ok)throw Error('Rechazado');b=[];size=0;}}
-for(const r of read()){if(!r?.id||!kinds.has(r.type)||synthetic(r))continue;const n=JSON.stringify(r).length;if(n>900000){pending++;continue;}if(b.length>=8||size+n>1180000)await send();b.push(r);size+=n;}await send();
+for(const r of read()){if(!r?.id||!kinds.has(r.type)||synthetic(r))continue;const n=JSON.stringify(r).length;if(n>1400000){pending++;continue;}if(b.length>=8||size+n>1180000)await send();b.push(r);size+=n;}await send();
 let all=[],offset=0,done=false;for(let i=0;i<3200;i++){const x=await call('pull',{offset});if(!x.ok||!Array.isArray(x.records))throw Error('Recepción inválida');all.push(...x.records);if(x.nextOffset===null){done=true;break;}if(x.nextOffset<=offset)throw Error('Cursor inválido');offset=x.nextOffset;}
 if(!done)throw Error('Recepción incompleta');
-const received=merge(all);good=new Date().toISOString();problem='';note('Informe KPI conectado · '+received+' recibidos'+(pending?' · '+pending+' adjuntos pendientes':''));return {ok:!pending,received,pending};
+const received=merge(all);good=new Date().toISOString();problem='';note((pending?'Informe KPI PARCIAL':'Informe KPI conectado')+' · '+received+' recibidos'+(pending?' · '+pending+' registros con fotografías grandes NO enviados':''));return {ok:!pending,received,pending};
 }catch(e){configured=false;problem=e.message||String(e);note('Informe KPI pendiente · '+problem);return {ok:false,error:problem};}finally{busy=false;}}
 function start(){setTimeout(sync,1500);setInterval(()=>{if(!document.hidden)sync();},20000);window.addEventListener('focus',sync);window.addEventListener('online',sync);window.addEventListener('mantpro-sync-complete',()=>setTimeout(sync,800));}
 window.EECR_INFORME_KPI_PC={sync,status:()=>({good,problem})};
