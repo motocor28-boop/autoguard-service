@@ -12,6 +12,7 @@
   const safeRead=(name,defaultValue)=>{try{const val=JSON.parse(localStorage.getItem(name)||'null');return val===null?defaultValue:val;}catch{return defaultValue;}};
   const localRecords=()=>{const v=safeRead(STORE,[]);return Array.isArray(v)?v:[];};
   const stamp=x=>String(x?.updatedAt||x?.at||'');
+  const isDemo=x=>!!x&&(String(x.id||'').startsWith('q1-')||x.provenance?.kind==='synthetic-training'||x.data?.provenance?.kind==='synthetic-training');
   const status=(s,kind='')=>{const node=$$('#state');if(node){node.textContent=s;node.className='sync-state '+kind;}};
   let secret=localStorage.getItem(PAIR)||'',inFlight=false,panel=null,lastOk=null,errorCount=0;
   if(secret&&!keyPattern.test(secret))secret='';
@@ -46,7 +47,7 @@
     for(let page=0;page<2000;page++){
       const res=await call('pull',{since,offset,limit:8});
       if(!Array.isArray(res.records))throw Error('Respuesta de sincronización inválida');
-      received.push(...res.records.filter(x=>x&&typeof x.id==='string'));
+      received.push(...res.records.filter(x=>x&&typeof x.id==='string'&&!isDemo(x)));
       if(res.watermark&&(!watermark||Date.parse(res.watermark)>Date.parse(watermark)))watermark=res.watermark;
       if(res.nextOffset===null)return {records:received,watermark};
       if(!Number.isInteger(res.nextOffset)||res.nextOffset<=offset)throw Error('Cursor sin avance');
@@ -63,9 +64,11 @@
     localStorage.setItem(CONFLICT,JSON.stringify(arr));
   }
   function merge(cloud,ack){
-    const existing=localRecords(),map=new Map(existing.map(x=>[x.id,x]));
-    let changed=false,conflicts=0;
+    const existing=localRecords(),map=new Map(existing.filter(x=>!isDemo(x)).map(x=>[x.id,x]));
+    const retired=existing.length-map.size;
+    let changed=retired>0,conflicts=0;
     for(const remote of cloud){
+      if(isDemo(remote))continue;
       const old=map.get(remote.id);
       if(!old){map.set(remote.id,{...remote,dirty:false,synced:true});changed=true;ack[remote.id]=stamp(remote);continue;}
       const newer=Date.parse(stamp(remote))||0,previous=Date.parse(stamp(old))||0;
@@ -86,7 +89,7 @@
     return conflicts;
   }
   async function push(){
-    const all=localRecords(),ack=safeRead(ACK,{}),send=all.filter(x=>x&&x.id&&ack[x.id]!==stamp(x));
+    const all=localRecords(),ack=safeRead(ACK,{}),send=all.filter(x=>x&&x.id&&!isDemo(x)&&ack[x.id]!==stamp(x));
     let batch=[],size=0,uploaded=0,oversized=0;
     async function flush(){
       if(!batch.length)return;
@@ -116,7 +119,7 @@
       const conflicts=merge(pulled.records,ack);
       if(pulled.watermark)localStorage.setItem(SINCE,pulled.watermark);
       lastOk=new Date().toISOString();errorCount=0;
-      const pending=localRecords().filter(x=>ack[x.id]!==stamp(x)).length;
+      const pending=localRecords().filter(x=>!isDemo(x)&&ack[x.id]!==stamp(x)).length;
       if(up.oversized||conflicts||pending)status('Sincronizado parcialmente · revisar '+(pending+up.oversized+conflicts),'warn');
       else status('Sincronizado','ok');
       window.dispatchEvent(new CustomEvent('mantpro-sync-complete',{detail:{count:localRecords().length,conflicts,pending}}));
