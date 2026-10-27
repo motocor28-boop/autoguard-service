@@ -1,7 +1,7 @@
 /* EECR: actualización PWA sin limpiar datos ni cachés antes de instalar la nueva versión. */
 (()=>{
   'use strict';
-  const BUILD='20261026-unico-canal-v3';
+  const BUILD='20261027-hepi-rescate-v4';
   const SW='sw.js?build='+BUILD;
   window.EECR_ACTIVE_BUILD=BUILD;
   async function update(){
