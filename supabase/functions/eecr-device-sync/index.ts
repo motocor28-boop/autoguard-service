@@ -36,17 +36,25 @@ Deno.serve(async(request:Request)=>{
   if(!url||!admin)return respond({error:"backend_not_configured"},503);
   const db=createClient(url,admin,{auth:{persistSession:false,autoRefreshToken:false}});
   if(body.action==="health")return respond({ok:true,version:"eecr-device-v2"});
+  // Defender la limpieza aun si un dispositivo antiguo conserva archivos PWA en cache.
+  const isQ1Demo=(x:Record<string,unknown>)=>String(x.id||"").startsWith("q1-")||
+    (x.provenance&&typeof x.provenance==="object"&&(x.provenance as Record<string,unknown>).kind==="synthetic-training")||
+    (x.data&&typeof x.data==="object"&&
+     (x.data as Record<string,unknown>).provenance&&
+     ((x.data as Record<string,unknown>).provenance as Record<string,unknown>).kind==="synthetic-training");
   if(body.action==="push"){
     if(!Array.isArray(body.records)||body.records.length<1||body.records.length>30)return respond({error:"invalid_batch"},400);
     const records=new Map<string,{id:string;payload:unknown;updated_at:string}>();
     for(const obj of body.records){
       if(!obj||typeof obj!=="object"||Array.isArray(obj))return respond({error:"invalid_record"},400);
       const row=obj as Record<string,unknown>,id=row.id,time=timestamp(row.updatedAt||row.at);
+      if(isQ1Demo(row))continue;
       if(typeof id!=="string"||id.length===0||id.length>160||!time)return respond({error:"invalid_record_metadata"},400);
       if(JSON.stringify(row).length>1900000)return respond({error:"record_too_large"},413);
       const old=records.get(id);
       if(!old||time>old.updated_at)records.set(id,{id,payload:row,updated_at:time});
     }
+    if(!records.size)return respond({ok:true,changed:0,accepted:0,discardedDemo:true});
     const {data,error}=await db.rpc("eecr_device_merge_batch",{p_workspace_key:key,p_items:[...records.values()]});
     if(error)return respond({error:"storage_unavailable"},503);
     return respond({ok:true,changed:data,accepted:records.size});

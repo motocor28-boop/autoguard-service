@@ -23,7 +23,7 @@
   <script>
     (()=>{
       'use strict';
-      const BUILD='20260804-mobile-preview-v3';
+      const BUILD='20261026-limpieza-pin-v1';
       const state=document.getElementById('state');
       const retry=document.getElementById('retry');
       const say=(text,kind='')=>{state.textContent=text;state.className='state '+kind};
@@ -31,9 +31,9 @@
         retry.hidden=true;
         try{
           say('Eliminando cachés anteriores…');
-          if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(key=>caches.delete(key)))}
+          if('caches'in window){const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith('eecr-supervision-')).map(key=>caches.delete(key)))}
           say('Desactivando la versión anterior…');
-          if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()))}
+          if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.filter(reg=>reg.scope.includes('/mantpro/')).map(reg=>reg.unregister()))}
           say('Instalando la versión nueva…');
           if('serviceWorker'in navigator){
             const reg=await navigator.serviceWorker.register(`sw.js?build=${BUILD}`,{scope:'./',updateViaCache:'none'});

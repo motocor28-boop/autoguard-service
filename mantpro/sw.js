@@ -1,5 +1,5 @@
-const CACHE='eecr-supervision-20261024-informe-kpi-pc-v1';
-const BUILD='20261024-informe-kpi-pc-v1';
+const CACHE='eecr-supervision-20261026-limpieza-pin-v1';
+const BUILD='20261026-limpieza-pin-v1';
 const ASSETS=[
   './','./index.html','./instalar.html','./sin-ejemplos.html','./actualizar-movil-v3.html',
   `./styles.css?build=${BUILD}`,`./manual-fields.css?build=${BUILD}`,`./photo-report-fix.css?build=${BUILD}`,

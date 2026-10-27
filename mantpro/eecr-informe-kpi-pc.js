@@ -19,7 +19,19 @@ function merge(rows){const map=new Map(read().filter(x=>x?.id).map(x=>[x.id,x]))
 for(const x of rows){if(!x?.id||!kinds.has(x.type)||synthetic(x))continue;const o=map.get(x.id);if(!o||time(x)>time(o)){map.set(x.id,o?{...o,...x}:x);added++;}}
 if(added){localStorage.setItem(S,JSON.stringify([...map.values()]));window.dispatchEvent(new CustomEvent('mantpro-records-changed',{detail:{source:'Informe KPI',added}}));window.MANTPRO?.render?.();}return added;}
 async function sync(){if(busy)return;busy=true;try{
-if(!configured){await post('/api/browser-pair',{secret:await secret()});configured=true;}
+if(!configured){
+ let linked=false;
+ try{await post('/api/browser-pair',{secret:await secret()});linked=true;}
+ catch(error){
+   if(!/pin_required|pin_incorrect|pin_expired/i.test(String(error.message||error)))throw error;
+   const value=window.prompt('PIN de 6 dígitos que aparece en Informe KPI EHS:', '');
+   if(value===null)throw Error('Vinculación pendiente: ingresa el PIN de Informe KPI cuando desees conectar.');
+   const pin=value.replace(/\s/g,'');
+   if(!/^\d{6}$/.test(pin))throw Error('El PIN debe tener seis dígitos.');
+   await post('/api/browser-pair',{secret:await secret(),pin});linked=true;
+ }
+ if(linked)configured=true;
+}
 let b=[],size=0,pending=0;
 async function send(){if(b.length){const ans=await call('push',{records:b});if(!ans.ok)throw Error('Rechazado');b=[];size=0;}}
 for(const r of read()){if(!r?.id||!kinds.has(r.type)||synthetic(r))continue;const n=JSON.stringify(r).length;if(n>900000){pending++;continue;}if(b.length>=8||size+n>1180000)await send();b.push(r);size+=n;}await send();
