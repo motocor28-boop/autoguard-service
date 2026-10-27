@@ -22,14 +22,7 @@ async function sync(){if(busy)return;busy=true;try{
 if(!configured){
  let linked=false;
  try{await post('/api/browser-pair',{secret:await secret()});linked=true;}
- catch(error){
-   if(!/pin_required|pin_incorrect|pin_expired/i.test(String(error.message||error)))throw error;
-   const value=window.prompt('PIN de 6 dígitos que aparece en Informe KPI EHS:', '');
-   if(value===null)throw Error('Vinculación pendiente: ingresa el PIN de Informe KPI cuando desees conectar.');
-   const pin=value.replace(/\s/g,'');
-   if(!/^\d{6}$/.test(pin))throw Error('El PIN debe tener seis dígitos.');
-   await post('/api/browser-pair',{secret:await secret(),pin});linked=true;
- }
+ catch(error){throw Error('Informe KPI local no disponible o pertenece a otro grupo. No se modificaron registros.');}
  if(linked)configured=true;
 }
 let b=[],size=0,pending=0;
