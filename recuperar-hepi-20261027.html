@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Recuperación HEPI — 20 a 27 octubre 2026</title>
+<meta name="referrer" content="no-referrer"><meta http-equiv="Cache-Control" content="no-store">
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;padding:16px;font:15px/1.5 system-ui,Arial,sans-serif;color:#eaf4fb;background:#0b1b29;display:grid;place-items:center;min-height:100vh}
+main{width:min(680px,100%);background:#1b3447;padding:26px;border:1px solid #53788c;border-radius:15px;box-shadow:0 12px 40px #0005}
+h1{font-size:25px;margin:0 0 12px}h2{font-size:18px}strong{color:#b9e9ff}
+button{background:#eeb04c;border:0;border-radius:7px;color:#102738;font:700 16px system-ui;padding:13px 17px;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+.secondary{background:#d5e5ee}.muted{color:#c4d2db}.warn{background:#3c3226;border:1px solid #c99d51;padding:11px;border-radius:8px}.ok{color:#8ce8b1}
+article{background:#112638;border-radius:8px;padding:12px;margin:12px 0}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin:15px 0}.actions button{flex:1 1 235px}
+#status{padding:12px;border:1px solid #426780;border-radius:8px;min-height:50px;white-space:pre-wrap}
+small{color:#bbcbd6}
+</style></head>
+<body><main>
+<h1>Recuperación de registros MantPro — HEPI</h1>
+<p>Rescate de registros originales entre el <strong>20 y el 27 de octubre de 2026</strong>. Esta herramienta funciona en el teléfono y también en el navegador del PC donde esté instalado MantPro.</p>
+<article id="summary">Comprobando la copia de recuperación…</article>
+<p class="warn"><strong>No desinstales MantPro, no borres la caché ni cambies su canal de sincronización.</strong> Cierra otras ventanas de MantPro antes de comenzar para que no modifiquen los registros durante el rescate.</p>
+<h2>Paso 1. Preparar la recuperación</h2>
+<p>El sistema descargará los registros y fotografías de la copia privada de rescate. Todavía no cambiará las actividades guardadas en este equipo.</p>
+<div class="actions"><button id="load" disabled>Preparar registros y fotografías</button>
+<button class="secondary" id="download" disabled>Descargar copia JSON</button></div>
+<h2>Paso 2. Restaurar sin reemplazar lo existente</h2>
+<p>Primero se guardará un respaldo local en el navegador. Se incorporarán <strong>únicamente los identificadores que faltan</strong>, preservando las OT y fotografías existentes.</p>
+<div class="actions"><button id="restore" disabled>Restaurar registros en este dispositivo</button>
+<button class="secondary" id="open" disabled>Abrir MantPro</button></div>
+<p id="status" role="status">Inicializando…</p>
+<small>El acceso al respaldo es temporal y privado. No compartas esta dirección completa con otras personas.</small>
+</main><script>
+(()=>{'use strict';
+const ENDPOINT='https://gecrjlkfrcrlsjhanfjz.supabase.co/functions/v1/eecr-hepi-recovery',
+STORE='mantpro-records-v3',ACK='eecr-device-ack-v1';
+const qs=new URLSearchParams(location.hash.replace(/^#/,''));
+const token=qs.get('token')||'';
+history.replaceState(null,'',location.pathname+location.search);
+const el=id=>document.getElementById(id),say=(s,good=false)=>{el('status').textContent=s;el('status').className=good?'ok':''};
+let records=[],total=0,complete=false;
+const valid=x=>x&&typeof x.id==='string'&&x.id.length>10&&
+   ['job','progress','safety','walk','technician','kpi','talk_signed'].includes(x.type)&&
+   typeof x.at==='string'&&x.at>='2026-10-20'&&x.at<'2026-10-28'&&!/^q1-|^demo-|^test-/i.test(x.id)&&
+   x?.provenance?.kind!=='synthetic-training'&&x?.data?.provenance?.kind!=='synthetic-training';
+async function request(action,params={}){
+ const r=await fetch(ENDPOINT,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({action,token,...params})});
+ const data=await r.json().catch(()=>({error:'bad_response'}));
+ if(!r.ok||!data.ok)throw Error(data.error==='recovery_link_expired'?'Enlace vencido. Solicita uno nuevo.':data.error||'Error HTTP '+r.status);
+ return data;
+}
+function backupDB(raw){
+ return new Promise((resolve,reject)=>{
+  if(!window.indexedDB){reject(Error('No se dispone de respaldo local IndexedDB.'));return;}
+  const req=indexedDB.open('eecr-recovery-checkpoints',1);
+  req.onerror=()=>reject(Error('No se pudo abrir el respaldo local.'));req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains('backups'))db.createObjectStore('backups',{keyPath:'id'});};
+  req.onsuccess=()=>{const db=req.result;let tx;try{tx=db.transaction('backups','readwrite');tx.objectStore('backups').put({id:'before-hepi-restore-20261027-'+Date.now(),createdAt:new Date().toISOString(),raw,ack:localStorage.getItem(ACK),since:localStorage.getItem('eecr-device-last-pull-v1')});}catch(e){db.close();reject(e);return;}
+   tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>{db.close();reject(Error('No se guardó el respaldo antes de restaurar.'));};tx.onabort=()=>{db.close();reject(Error('Se canceló el respaldo previo.'));};
+  };
+ });
+}
+function download(){
+ if(!complete)return;
+ const content=JSON.stringify({application:'MANTPRO / EECR',version:'3.1',recovery:'HEPI_2026-10-20_27',exportedAt:new Date().toISOString(),records},null,2);
+ const url=URL.createObjectURL(new Blob([content],{type:'application/json'}));
+ const a=document.createElement('a');a.href=url;a.download='HEPI_RESCATE_H31_H32_20_27_OCT_2026.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),20000);
+ say('Copia de recuperación solicitada para descarga. Conserva el archivo JSON original.',true);
+}
+async function preview(){
+ if(!/^[0-9a-f]{64}$/.test(token)){say('La dirección no contiene una autorización válida. Abre el enlace completo de recuperación.');return;}
+ try{
+  const result=await request('preview');total=result.total;
+  if(total<1||total>50)throw Error('Cantidad inesperada de registros ('+total+'). No se continuará.');
+  el('summary').innerHTML='<strong>Respaldo disponible:</strong> '+total+' registros reales de H31 y H32, con las fotografías originales.<br>La recuperación es aditiva: no elimina los trabajos que ya tengas.';
+  el('load').disabled=false;
+  say('Respaldo identificado. Pulsa «Preparar registros y fotografías».');
+ }catch(e){say('No se pudo acceder a la copia privada: '+e.message);}
+}
+async function load(){
+ el('load').disabled=true;
+ try{
+  const all=[],seen=new Set();let offset=0,finished=false;
+  for(let n=0;n<40;n++){
+   say('Descargando fotografías y registros: '+all.length+'/'+total+'…');
+   const data=await request('page',{offset,limit:2});
+   if(!Array.isArray(data.records))throw Error('Formato incorrecto del respaldo.');
+   for(const row of data.records){if(!valid(row)||seen.has(row.id))throw Error('Identificador o fecha inesperada en el respaldo.');seen.add(row.id);all.push(row);}
+   if(data.nextOffset===null){finished=true;break;}
+   if(!Number.isInteger(data.nextOffset)||data.nextOffset<=offset)throw Error('Error de paginación.');
+   offset=data.nextOffset;
+  }
+  if(!finished||all.length!==total)throw Error('Descarga incompleta. Recibidos '+all.length+' de '+total+'.');
+  records=all;complete=true;el('download').disabled=false;el('restore').disabled=false;
+  const h32=all.filter(x=>x.at.startsWith('2026-10-26')).length,h31=all.filter(x=>x.at.startsWith('2026-10-23')).length;
+  say('Copia verificada: '+h32+' registros H32 del 26/10 y '+h31+' registros H31 del 23/10. Puedes descargar el JSON y restaurar.',true);
+ }catch(e){say('Error: '+e.message+'. Ningún dato local fue modificado.');el('load').disabled=false;}
+}
+async function restore(){
+ if(!complete)return;el('restore').disabled=true;
+ try{
+  const original=localStorage.getItem(STORE)||'[]';
+  const local=JSON.parse(original);
+  if(!Array.isArray(local))throw Error('La base local de MantPro es inválida; no se modificó.');
+  const existing=new Map(local.filter(r=>r&&typeof r.id==='string').map(r=>[r.id,r]));
+  const added=[];
+  for(const r of records)if(!existing.has(r.id)){existing.set(r.id,{...r,dirty:true,synced:false});added.push(r.id);}
+  if(!added.length){say('Los '+total+' registros ya existen en este navegador. No se sobrescribió ninguno. Si no aparecen en MantPro, comprueba que ambas pantallas usen el mismo navegador y almacenamiento.',true);el('open').disabled=false;return;}
+  say('Guardando copia de seguridad local antes de incorporar '+added.length+' registros…');
+  await backupDB(original);
+  localStorage.setItem(STORE,JSON.stringify([...existing.values()]));
+  let ack={};try{ack=JSON.parse(localStorage.getItem(ACK)||'{}');}catch{}
+  if(ack&&typeof ack==='object'&&!Array.isArray(ack)){for(const id of added)delete ack[id];try{localStorage.setItem(ACK,JSON.stringify(ack));}catch{}}
+  el('open').disabled=false;
+  say('RECUPERACIÓN REALIZADA: '+added.length+' registros incorporados sin reemplazar los existentes. Copia previa guardada en el navegador. Abre MantPro y comprueba las OT y fotografías.',true);
+ }catch(e){say('No se efectuó una recuperación completa: '+e.message+'. Conserva los respaldos y no borres datos.');el('restore').disabled=false;}
+}
+el('load').onclick=load;el('download').onclick=download;el('restore').onclick=restore;
+el('open').onclick=()=>location.assign('./mantpro/index.html?recovered='+Date.now());
+preview();
+})();
+</script></body></html>
