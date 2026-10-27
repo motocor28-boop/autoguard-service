@@ -130,6 +130,38 @@
       return {ok:false,error:e.message};
     }finally{inFlight=false;}
   }
+  async function channelCode(){
+    if(!secret||!keyPattern.test(secret))return 'SIN CANAL';
+    try{
+      const data=Uint8Array.from(atob(secret.replace(/-/g,'+').replace(/_/g,'/')+'='),c=>c.charCodeAt(0));
+      const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',data));
+      return Array.from(hash.slice(0,6),x=>x.toString(16).padStart(2,'0')).join('');
+    }catch{return 'NO IDENTIFICADO';}
+  }
+  function localTotals(){
+    const list=localRecords().filter(x=>!isDemo(x)),kinds={};
+    let photos=0;
+    for(const row of list){
+      kinds[row.type]=(kinds[row.type]||0)+1;
+      photos+=Array.isArray(row.data?.stagePhotos)?row.data.stagePhotos.filter(x=>x?.dataUrl||x?.src).length:0;
+      if(row.photo)photos++;
+    }
+    return {total:list.length,jobs:kinds.job||0,progress:kinds.progress||0,photos};
+  }
+  function checkBridge(){
+    if(isMobile)return 'Informe KPI: no corresponde al teléfono';
+    const bridge=window.EECR_INFORME_KPI_PC?.status?.();
+    if(!bridge)return 'Informe KPI: puente PC no cargado';
+    if(bridge.problem)return 'Informe KPI: pendiente · '+String(bridge.problem).slice(0,130);
+    if(bridge.good)return 'Informe KPI: enlace local activo desde '+new Date(bridge.good).toLocaleTimeString('es-CL');
+    return 'Informe KPI: recepción no confirmada';
+  }
+  async function refreshDiagnostics(){
+    const box=panel?.querySelector('#eecr-channel-check');if(!box)return;
+    const code=await channelCode(),counts=localTotals();
+    if(!panel||!box.isConnected)return;
+    box.textContent='Canal de este equipo: '+code+' · Registros locales: '+counts.total+' · OT: '+counts.jobs+' · Avances: '+counts.progress+' · Fotos por etapa: '+counts.photos+'\n'+checkBridge();
+  }
   function close(){panel?.remove();panel=null;}
   function openPanel(){
     if(panel)return;
@@ -142,13 +174,16 @@
       '<p style="margin:0">Última transferencia correcta: <b id="eecr-last-ok">'+(lastOk?new Date(lastOk).toLocaleString('es-CL'):'Sin confirmar')+'</b></p>'+
       '<button type="button" id="eecr-check-now" style="padding:12px">Verificar entrega</button>'+
       '<p id="eecr-check-result" role="status"></p>'+
+      '<p id="eecr-channel-check" style="white-space:pre-line;background:#0e283a;padding:12px;border-radius:8px;font-size:13px">Comprobando identificador de canal...</p>'+
       '<button type="button" id="eecr-close-sync" style="padding:11px">Cerrar</button></section>';
     document.body.append(panel);
     panel.querySelector('#eecr-close-sync').onclick=close;
+    refreshDiagnostics();
     panel.querySelector('#eecr-check-now').onclick=async()=>{
       const n=panel?.querySelector('#eecr-check-result');if(n)n.textContent='Verificando…';
       const result=await sync();if(n)n.textContent=result?.ok?'Entrega confirmada con la nube.':('Pendiente: '+(result?.error||'comprobar registros sin enviar'));
       if(panel&&lastOk)panel.querySelector('#eecr-last-ok').textContent=new Date(lastOk).toLocaleString('es-CL');
+      await refreshDiagnostics();
     };
   }
   function acceptLink(){
