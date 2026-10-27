@@ -188,7 +188,61 @@
     if(window.showDirectoryPicker)try{let h=await getHandle();if(!h){await chooseBackupFolder();h=await getHandle()}if(h){const p=await h.queryPermission({mode:'readwrite'});if(p!=='granted'&&await h.requestPermission({mode:'readwrite'})!=='granted')throw Error('permiso');const d=new Date(),root=await h.getDirectoryHandle('Respaldos_MANTPRO_IA',{create:true}),year=await root.getDirectoryHandle(String(d.getFullYear()),{create:true}),month=await year.getDirectoryHandle(monthNames[d.getMonth()],{create:true}),file=await month.getFileHandle('MANTPRO_EECR_Respaldo_'+iso().replace(/[:.]/g,'-')+'.json',{create:true}),w=await file.createWritable();await w.write(JSON.stringify(backupPayload(),null,2));await w.close();toast('Respaldo guardado por año y mes');return true}}catch(err){console.warn(err)}
     downloadBackup();toast('Respaldo descargado');return true
   }
-  async function restoreFile(e){const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data.records))throw Error();const map=new Map(records().map(x=>[x.id,x]));data.records.forEach(x=>map.set(x.id,{...x,dirty:true,synced:false,updatedAt:iso()}));persist([...map.values()]);toast('Respaldo restaurado');sync();render()}catch{alert('El archivo no corresponde a un respaldo válido de MANTPRO.')}finally{e.target.value=''}}
+  // Rescate seguro: se crea un checkpoint local antes de cada importación, sin sobrescribir IDs existentes.
+  function snapshotBeforeImport(raw){
+    return new Promise((resolve,reject)=>{
+      const request=indexedDB.open('eecr-recovery-checkpoints',1);
+      request.onupgradeneeded=()=>{
+        const db=request.result;
+        if(!db.objectStoreNames.contains('backups'))db.createObjectStore('backups',{keyPath:'id'});
+      };
+      request.onerror=()=>reject(new Error('No se pudo respaldar la base local en IndexedDB'));
+      request.onsuccess=()=>{
+        const db=request.result;
+        let transaction;
+        try{
+          transaction=db.transaction('backups','readwrite');
+          transaction.objectStore('backups').put({id:'before-mantpro-file-import-'+Date.now(),createdAt:iso(),raw,ack:localStorage.getItem('eecr-device-ack-v1')});
+        }catch(error){db.close();reject(error);return;}
+        transaction.oncomplete=()=>{db.close();resolve(true);};
+        transaction.onerror=()=>{db.close();reject(new Error('Falló la creación del respaldo previo'));};
+        transaction.onabort=()=>{db.close();reject(new Error('Se canceló el respaldo previo'));};
+      };
+    });
+  }
+  async function restoreFile(e){
+    const file=e.target.files?.[0];if(!file)return;
+    try{
+      const imported=JSON.parse(await file.text());
+      if(!Array.isArray(imported.records)||imported.records.length>10000)throw Error('El archivo no tiene una lista válida de registros');
+      const current=records();
+      if(!Array.isArray(current))throw Error('La base local no tiene un formato válido');
+      const existing=new Map(current.filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
+      const allowed=new Set(['job','progress','safety','walk','technician','kpi','talk_signed']);
+      let added=0,skipped=0;
+      for(const row of imported.records){
+        if(!row||typeof row.id!=='string'||row.id.length<10||!allowed.has(row.type))throw Error('El respaldo contiene un registro no válido');
+        if(/^q1-|^demo-|^test-/i.test(row.id)||row.provenance?.kind==='synthetic-training'||row.data?.provenance?.kind==='synthetic-training'){skipped++;continue;}
+        if(existing.has(row.id)){skipped++;continue;}
+        existing.set(row.id,{...row,dirty:true,synced:false});
+        added++;
+      }
+      if(!added){toast('Sin cambios: los registros ya estaban guardados ('+skipped+' omitidos).');return;}
+      await snapshotBeforeImport(localStorage.getItem(STORE)||'[]');
+      persist([...existing.values()]);
+      let ack;try{ack=JSON.parse(localStorage.getItem('eecr-device-ack-v1')||'{}');}catch{ack={};}
+      if(ack&&typeof ack==='object'&&!Array.isArray(ack)){
+        for(const row of imported.records)if(row?.id&&existing.has(row.id)&&!current.some(x=>x?.id===row.id))delete ack[row.id];
+        localStorage.setItem('eecr-device-ack-v1',JSON.stringify(ack));
+      }
+      toast('RECUPERADOS: '+added+' registros nuevos. '+skipped+' ya existentes u omitidos.');
+      render();
+      syncSoon();
+    }catch(error){
+      console.error('MantPro: restauración cancelada',error);
+      alert('No se importaron registros: '+(error?.message||'archivo no compatible')+'. No borres los datos actuales.');
+    }finally{e.target.value='';}
+  }
   async function resetAll(){if(!confirm('Primero se creará un respaldo. Luego se borrarán los datos locales y de la nube. ¿Continuar?'))return;await createBackup();const code=prompt('Escribe BORRAR para confirmar el reinicio total.');if(code!=='BORRAR')return;try{if(window.MANTPRO_AUTH?.token()){const r=await fetch(C.supabaseUrl+'/rest/v1/mantpro_records?id=not.is.null',{method:'DELETE'});if(!r.ok)throw Error(await r.text())}persist([]);toast('Datos eliminados. MANTPRO quedó en cero.');go('home')}catch{alert('No se completó el borrado en la nube. Los datos se conservaron para evitar una pérdida parcial.')}}
   async function installApp(){if(state.installPrompt){state.installPrompt.prompt();await state.installPrompt.userChoice;state.installPrompt=null;toast('Instalación iniciada')}else alert('En computador: abre el menú del navegador y elige “Aplicaciones > Instalar este sitio”. En Android: menú ⋮ > Agregar a pantalla principal > Instalar.')}
   function back(){if(state.route==='job_detail'||state.route==='job_report')go('jobs');else if(state.route==='walk_detail')go('safety');else go(state.previous||'home')}
