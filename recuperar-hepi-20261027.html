@@ -23,10 +23,11 @@ small{color:#bbcbd6}
 <p>El sistema descargará los registros y fotografías de la copia privada de rescate. Todavía no cambiará las actividades guardadas en este equipo.</p>
 <div class="actions"><button id="load" disabled>Preparar registros y fotografías</button>
 <button class="secondary" id="download" disabled>Descargar copia JSON</button></div>
-<h2>Paso 2. Restaurar sin reemplazar lo existente</h2>
-<p>Primero se guardará un respaldo local en el navegador. Se incorporarán <strong>únicamente los identificadores que faltan</strong>, preservando las OT y fotografías existentes.</p>
-<div class="actions"><button id="restore" disabled>Restaurar registros en este dispositivo</button>
-<button class="secondary" id="open" disabled>Abrir MantPro</button></div>
+<h2>Paso 2. Importar desde MantPro instalado</h2>
+<p><strong>IMPORTANTE:</strong> abrir esta página desde un enlace puede utilizar un almacenamiento distinto del MantPro instalado. Por eso no intentaremos escribir las OT aquí. Descarga el archivo JSON y luego abre <strong>la aplicación MantPro instalada en el teléfono</strong> y pulsa <strong>Más opciones → Restaurar respaldo</strong>. Selecciona el archivo en Descargas.</p>
+<p>El respaldo descargado conserva las 11 actividades y fotografías originales. No necesitas cambiar el grupo ni conectarte con PIN.</p>
+<div class="actions"><button id="restore" disabled>Descargar e importar desde la app</button></div>
+<article id="import-steps" style="display:none"><strong>Importación segura:</strong><ol><li>Comprueba que el archivo JSON esté en <b>Descargas</b>.</li><li>Abre MantPro <b>desde el icono instalado en el teléfono</b>, no desde esta página.</li><li>En MantPro entra en <b>Más opciones → Restaurar respaldo</b>.</li><li>Selecciona <b>HEPI_RESCATE_H31_H32_20_27_OCT_2026.json</b>.</li><li>Abre Órdenes de trabajo y verifica <b>OT-2026-00010 H32</b> y la OT de H31.</li></ol></article>
 <p id="status" role="status">Inicializando…</p>
 <small>El acceso al respaldo es temporal y privado. No compartas esta dirección completa con otras personas.</small>
 </main><script>
@@ -64,7 +65,7 @@ function download(){
  const content=JSON.stringify({application:'MANTPRO / EECR',version:'3.1',recovery:'HEPI_2026-10-20_27',exportedAt:new Date().toISOString(),records},null,2);
  const url=URL.createObjectURL(new Blob([content],{type:'application/json'}));
  const a=document.createElement('a');a.href=url;a.download='HEPI_RESCATE_H31_H32_20_27_OCT_2026.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),20000);
- say('Copia de recuperación solicitada para descarga. Conserva el archivo JSON original.',true);
+ say('Descarga JSON solicitada: comprueba la carpeta Descargas de Chrome. En MantPro instalado utiliza «Más opciones → Restaurar respaldo» para importar.',true);el('import-steps').style.display='block';
 }
 async function preview(){
  if(!/^[0-9a-f]{64}$/.test(token)){say('La dirección no contiene una autorización válida. Abre el enlace completo de recuperación.');return;}
@@ -96,24 +97,12 @@ async function load(){
  }catch(e){say('Error: '+e.message+'. Ningún dato local fue modificado.');el('load').disabled=false;}
 }
 async function restore(){
- if(!complete)return;el('restore').disabled=true;
- try{
-  const original=localStorage.getItem(STORE)||'[]';
-  const local=JSON.parse(original);
-  if(!Array.isArray(local))throw Error('La base local de MantPro es inválida; no se modificó.');
-  const existing=new Map(local.filter(r=>r&&typeof r.id==='string').map(r=>[r.id,r]));
-  const added=[];
-  for(const r of records)if(!existing.has(r.id)){existing.set(r.id,{...r,dirty:true,synced:false});added.push(r.id);}
-  if(!added.length){say('Los '+total+' registros ya existen en este navegador. No se sobrescribió ninguno. Si no aparecen en MantPro, comprueba que ambas pantallas usen el mismo navegador y almacenamiento.',true);el('open').disabled=false;return;}
-  say('Guardando copia de seguridad local antes de incorporar '+added.length+' registros…');
-  await backupDB(original);
-  localStorage.setItem(STORE,JSON.stringify([...existing.values()]));
-  let ack={};try{ack=JSON.parse(localStorage.getItem(ACK)||'{}');}catch{}
-  if(ack&&typeof ack==='object'&&!Array.isArray(ack)){for(const id of added)delete ack[id];try{localStorage.setItem(ACK,JSON.stringify(ack));}catch{}}
-  el('open').disabled=false;
-  say('RECUPERACIÓN REALIZADA: '+added.length+' registros incorporados sin reemplazar los existentes. Copia previa guardada en el navegador. Abre MantPro y comprueba las OT y fotografías.',true);
- }catch(e){say('No se efectuó una recuperación completa: '+e.message+'. Conserva los respaldos y no borres datos.');el('restore').disabled=false;}
+ if(!complete)return;
+ download();
+ el('import-steps').style.display='block';
+ say('Archivo JSON preparado. Ahora abre MantPro desde su icono instalado y utiliza «Más opciones → Restaurar respaldo». No uses la restauración antigua de esta página.',true);
 }
+
 el('load').onclick=load;el('download').onclick=download;el('restore').onclick=restore;
 el('open').onclick=()=>location.assign('./mantpro/index.html?recovered='+Date.now());
 preview();
