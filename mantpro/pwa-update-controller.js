@@ -1,7 +1,7 @@
 /* EECR: actualización PWA sin limpiar datos ni cachés antes de instalar la nueva versión. */
 (()=>{
   'use strict';
-  const BUILD='20261027-verificar-entrega-v6';
+  const BUILD='20261027-auto-sin-internet-v7';
   const SW='sw.js?build='+BUILD;
   window.EECR_ACTIVE_BUILD=BUILD;
   async function update(){
