@@ -10,13 +10,18 @@
   const serial=x=>JSON.stringify(x||[]);
   function mapRecord(x){
     const d=x.data&&typeof x.data==='object'?x.data:{};
-    const src={id:x.id,createdAt:x.at,updatedAt:x.updatedAt||x.at,sourceApp:'EECR-MANTPRO-PWA',sourceRecord:x};
+    const staged=Array.isArray(d.stagePhotos)?d.stagePhotos.filter(p=>p&&(p.dataUrl||p.src)):[];
+    const photoList=[...(x.photo?[x.photo]:[]),...staged.map(p=>p.dataUrl||p.src)];
+    const photoEvidence=staged.map(p=>({id:p.id||'',segment:p.segment||'',designation:p.designation||'',note:p.note||'',capturedAt:p.capturedAt||''}));
+    // sourceRecord conserva los bytes y metadatos originales de cada fotografía.
+    const src={id:x.id,createdAt:x.at,updatedAt:x.updatedAt||x.at,sourceApp:'EECR-MANTPRO-PWA',
+      sourceRecord:x,photoEvidence};
     switch(x.type){
-      case 'job':return {...src,folio:d.folio||x.title||'',plant:d.plant||'',area:d.area||'',equipment:d.equip||'',tag:d.equip||'',type:d.maintenance||'',priority:d.priority||'',description:d.task||x.title||'',technicians:d.technicians||'',plannedStart:d.plannedStart,plannedEnd:d.plannedEnd,actualStart:d.actualStart,actualEnd:d.actualEnd,progress:d.progress||0,sourcePhotos:x.photo?[x.photo]:[]};
-      case 'progress':return {...src,workId:d.jobId,timestamp:d.recordedAt||x.at,percent:d.percent??0,notes:d.text||x.title||'',findings:d.findings||'',photoPaths:x.photo?[x.photo]:[]};
-      case 'safety':return {...src,workId:d.jobId,walkId:d.walkId,plant:d.plant,area:d.area,category:d.category,risk:d.risk,description:d.text||'',immediateAction:d.action||'',correctiveAction:d.recommendation||'',responsible:d.responsible||'',dueDate:d.dueDate,closedAt:d.closedAt,detectedAt:d.recordedAt||x.at,photoPaths:x.photo?[x.photo]:[]};
-      case 'walk':return {...src,folio:d.folio,date:d.startAt||x.at,plant:d.plant,areas:d.area,objective:d.objective,participants:d.participants,startTime:d.startAt,endTime:d.endAt};
-      case 'kpi':return {...src,workId:d.jobId,technicianId:d.technician||'',date:d.recordedAt||x.at,score:d.score,technician:d.technician,safetyScore:d.safety,qualityScore:d.quality,productivityScore:d.productivity,documentationScore:d.documentation};
+      case 'job':return {...src,folio:d.folio||x.title||'',plant:d.plant||'',area:d.area||'',equipment:d.equip||'',tag:d.equip||'',type:d.maintenance||'',priority:d.priority||'',description:d.task||x.title||'',technicians:d.technicians||'',plannedStart:d.plannedStart,plannedEnd:d.plannedEnd,actualStart:d.actualStart,actualEnd:d.actualEnd,progress:d.progress||0,sourcePhotos:photoList};
+      case 'progress':return {...src,workId:d.jobId,timestamp:d.recordedAt||x.at,percent:d.percent??0,notes:d.text||x.title||'',findings:d.findings||'',photoPaths:photoList};
+      case 'safety':return {...src,workId:d.jobId,walkId:d.walkId,plant:d.plant,area:d.area,category:d.category,risk:d.risk,description:d.text||'',immediateAction:d.action||'',correctiveAction:d.recommendation||'',responsible:d.responsible||'',dueDate:d.dueDate,closedAt:d.closedAt,detectedAt:d.recordedAt||x.at,photoPaths:photoList};
+      case 'walk':return {...src,photoPaths:photoList,folio:d.folio,date:d.startAt||x.at,plant:d.plant,areas:d.area,objective:d.objective,participants:d.participants,startTime:d.startAt,endTime:d.endAt};
+      case 'kpi':return {...src,photoPaths:photoList,workId:d.jobId,technicianId:d.technician||'',date:d.recordedAt||x.at,score:d.score,technician:d.technician,safetyScore:d.safety,qualityScore:d.quality,productivityScore:d.productivity,documentationScore:d.documentation};
       case 'technician':return {...src,name:d.name||x.title||'',specialty:d.specialty||'',company:d.company||''};
       case 'talk_signed':return {...src,title:x.title||'Charla de seguridad',date:x.at,photoDataUrl:d.photoDataUrl||x.photo||'',status:'recibida',observations:d.observations||''};
       default:return src;
@@ -46,7 +51,7 @@
         if(!x||!x.id||!types[x.type])continue;
         (buckets[types[x.type]]??=[]).push(mapRecord(x));
       }
-      const signature=serial(Object.fromEntries(Object.entries(buckets).map(([k,v])=>[k,v.map(x=>[x.id,x.updatedAt])])));
+      const signature=serial(Object.fromEntries(Object.entries(buckets).map(([k,v])=>[k,v.map(x=>[x.id,x.updatedAt,x.photoEvidence?.length||0])])));
       if(signature===last&&lastSuccess&&Date.now()-Date.parse(lastSuccess)<60000)return true;
       for(const base of API){
         try{
