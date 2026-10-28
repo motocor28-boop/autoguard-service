@@ -68,8 +68,15 @@
       const group=groups.get(key);
       if(group.total===d.total)group.parts.set(d.index,d.bytes);
     }
-    let incomplete=0;
+    // Solo la revisión más reciente de cada OT cuenta como pendiente.
+    // Al reducir el número de fotos pueden quedar fragmentos antiguos en nube.
+    const latest=new Map();
     for(const group of groups.values()){
+      const old=latest.get(group.id);
+      if(!old||Date.parse(group.stampValue)>Date.parse(old.stampValue))latest.set(group.id,group);
+    }
+    let incomplete=0;
+    for(const group of latest.values()){
       if(group.parts.size!==group.total){incomplete++;continue}
       try{
         const bytes=[],lens=[],all=Array.from({length:group.total},(_,i)=>unb64(group.parts.get(i)));
